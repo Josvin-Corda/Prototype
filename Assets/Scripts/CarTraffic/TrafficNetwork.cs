@@ -14,8 +14,9 @@ public class TrafficNetwork : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        // Automatically find all nodes in the children of this GameObject
-        allNodes.AddRange(GetComponentsInChildren<TrafficNode>());
+        // Automatically find all nodes in the scene
+        allNodes.Clear();
+        allNodes.AddRange(FindObjectsOfType<TrafficNode>());
     }
 
     /// <summary>
@@ -28,6 +29,7 @@ public class TrafficNetwork : MonoBehaviour
         
         foreach (TrafficNode node in allNodes)
         {
+            if (node == null) continue;
             float dist = Vector3.Distance(position, node.transform.position);
             if (dist < minDistance)
             {
@@ -46,6 +48,8 @@ public class TrafficNetwork : MonoBehaviour
         Queue<TrafficNode> queue = new Queue<TrafficNode>();
         Dictionary<TrafficNode, TrafficNode> cameFrom = new Dictionary<TrafficNode, TrafficNode>();
 
+        if (start == null || end == null) return new List<TrafficNode>();
+
         queue.Enqueue(start);
         cameFrom[start] = null;
 
@@ -55,8 +59,10 @@ public class TrafficNetwork : MonoBehaviour
 
             if (current == end) break; // Reached destination
 
+            if (current.nextNodes == null) continue;
             foreach (TrafficNode neighbor in current.nextNodes)
             {
+                if (neighbor == null) continue;
                 if (!cameFrom.ContainsKey(neighbor))
                 {
                     cameFrom[neighbor] = current;

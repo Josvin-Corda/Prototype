@@ -100,6 +100,7 @@
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="UnityEditor.XR.LegacyInputHelpers.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.XR.Management.csproj" />
   <Project Path="Unity.Core.Editor.csproj" />
   <Project Path="Unity.Mathematics.Extensions.csproj" />
@@ -120,7 +121,6 @@
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Async.csproj" />
   <Project Path="Unity.Deformations.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="glTFast.dots.csproj" />
   <Project Path="Unity.Mathematics.Extensions.Hybrid.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.ConformanceAutomation.csproj" />

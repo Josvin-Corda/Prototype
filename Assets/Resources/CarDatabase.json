@@ -1,0 +1,19 @@
+{
+  "cars": [
+    {
+      "plateNumber": "AA-123-BB",
+      "ownerName": "John Doe",
+      "contact": "+39 333 1234567"
+    },
+    {
+      "plateNumber": "CC-456-DD",
+      "ownerName": "Jane Smith",
+      "contact": "+39 333 9876543"
+    },
+    {
+      "plateNumber": "EE-789-FF",
+      "ownerName": "Mario Rossi",
+      "contact": "+39 333 0001112"
+    }
+  ]
+}
