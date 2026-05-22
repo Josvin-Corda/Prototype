@@ -21,9 +21,11 @@ public class NPCCarSpawner : MonoBehaviour
     public Vector3 spawnRotation = new Vector3(0f, 90f, 0f);
 
     [Tooltip("Maximum number of NPC cars active at any time.")]
+    [Range(1, 20)]
     public int maxNPCCars = 4;
 
     [Tooltip("Seconds between each spawn attempt.")]
+    [Range(1f, 60f)]
     public float spawnInterval = 8f;
 
     [Tooltip("Seconds to wait before the first spawn (let the network initialize).")]
@@ -125,12 +127,6 @@ public class NPCCarSpawner : MonoBehaviour
         Vector3 pos = spawnPoint != null ? spawnPoint.position : transform.position;
         Quaternion rot = Quaternion.Euler(spawnRotation);
 
-        // Instantiate the car
-        GameObject carObj = Instantiate(prefab, pos, rot);
-        carObj.transform.localScale = Vector3.one * carScale;
-        spawnedCount++;
-        carObj.name = $"NPC_{prefab.name}_{spawnedCount}";
-
         // Find nearest NavMesh position using the correct agentTypeID
         Vector3 spawnPos = pos;
         NavMeshHit hit;
@@ -141,13 +137,17 @@ public class NPCCarSpawner : MonoBehaviour
         if (NavMesh.SamplePosition(pos, out hit, 15f, filter))
         {
             spawnPos = hit.position;
-            // Set position before adding agent to minimize/prevent warning
-            carObj.transform.position = spawnPos;
         }
         else
         {
             Debug.LogWarning($"[NPCCarSpawner] Could not find NavMesh close to spawn position {pos} for agentType {filter.agentTypeID}!");
         }
+
+        // Instantiate the car directly at the valid NavMesh position
+        GameObject carObj = Instantiate(prefab, spawnPos, rot);
+        carObj.transform.localScale = Vector3.one * carScale;
+        spawnedCount++;
+        carObj.name = $"NPC_{prefab.name}_{spawnedCount}";
 
         // Ensure it has a NavMeshAgent
         NavMeshAgent agent = carObj.GetComponent<NavMeshAgent>();
@@ -214,5 +214,51 @@ public class NPCCarSpawner : MonoBehaviour
         char c3 = (char)Random.Range('A', 'Z' + 1);
         char c4 = (char)Random.Range('A', 'Z' + 1);
         return $"{c1}{c2}-{num}-{c3}{c4}";
+    }
+
+    private void OnGUI()
+    {
+        // Design a sleek dark-themed GUI box in the top-left corner
+        GUI.backgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.85f);
+        GUILayout.BeginArea(new Rect(10f, 10f, 280f, 220f), GUI.skin.box);
+        GUILayout.BeginVertical();
+
+        // Title
+        GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
+        titleStyle.alignment = TextAnchor.MiddleCenter;
+        titleStyle.fontStyle = FontStyle.Bold;
+        titleStyle.fontSize = 14;
+        titleStyle.normal.textColor = Color.cyan;
+        GUILayout.Label("Valet Spawner Controls", titleStyle);
+        GUILayout.Space(5f);
+
+        // Stats readout
+        int activeCount = valetSystem != null ? valetSystem.activeSessions.Count : 0;
+        GUILayout.Label($"Active Cars: {activeCount} / {maxNPCCars}", GUI.skin.label);
+        GUILayout.Space(5f);
+
+        // Max NPC Cars Slider
+        GUILayout.Label($"Max NPC Cars: {maxNPCCars}", GUI.skin.label);
+        maxNPCCars = Mathf.RoundToInt(GUILayout.HorizontalSlider(maxNPCCars, 1f, 20f));
+        GUILayout.Space(5f);
+
+        // Spawn Interval Slider
+        GUILayout.Label($"Spawn Interval: {spawnInterval:F1} seconds", GUI.skin.label);
+        spawnInterval = GUILayout.HorizontalSlider(spawnInterval, 1f, 60f);
+        GUILayout.Space(10f);
+
+        // Manual Spawn button
+        GUI.backgroundColor = Color.cyan;
+        if (GUILayout.Button("Force Spawn Car Now", GUILayout.Height(30f)))
+        {
+            if (valetSystem != null)
+            {
+                SpawnCar();
+            }
+        }
+        GUI.backgroundColor = Color.white;
+
+        GUILayout.EndVertical();
+        GUILayout.EndArea();
     }
 }

@@ -3,17 +3,142 @@
     {
       "plateNumber": "AA-123-BB",
       "ownerName": "John Doe",
-      "contact": "+39 333 1234567"
+      "contact": "+39 333 1234567",
+      "numPassengers": 2,
+      "returnWaitTime": 12.0
     },
     {
       "plateNumber": "CC-456-DD",
       "ownerName": "Jane Smith",
-      "contact": "+39 333 9876543"
+      "contact": "+39 333 9876543",
+      "numPassengers": 4,
+      "returnWaitTime": 25.0
     },
     {
       "plateNumber": "EE-789-FF",
       "ownerName": "Mario Rossi",
-      "contact": "+39 333 0001112"
+      "contact": "+39 333 0001112",
+      "numPassengers": 1,
+      "returnWaitTime": 10.0
+    },
+    {
+      "plateNumber": "GG-101-HH",
+      "ownerName": "Luigi Bianchi",
+      "contact": "+39 333 1112223",
+      "numPassengers": 3,
+      "returnWaitTime": 18.0
+    },
+    {
+      "plateNumber": "II-202-JJ",
+      "ownerName": "Alice Johnson",
+      "contact": "+39 333 2223334",
+      "numPassengers": 2,
+      "returnWaitTime": 15.0
+    },
+    {
+      "plateNumber": "KK-303-LL",
+      "ownerName": "Bob Miller",
+      "contact": "+39 333 3334445",
+      "numPassengers": 4,
+      "returnWaitTime": 30.0
+    },
+    {
+      "plateNumber": "MM-404-NN",
+      "ownerName": "Emma Watson",
+      "contact": "+39 333 4445556",
+      "numPassengers": 3,
+      "returnWaitTime": 22.0
+    },
+    {
+      "plateNumber": "OO-505-PP",
+      "ownerName": "Frank Sinatra",
+      "contact": "+39 333 5556667",
+      "numPassengers": 1,
+      "returnWaitTime": 14.0
+    },
+    {
+      "plateNumber": "QQ-606-RR",
+      "ownerName": "Grace Hopper",
+      "contact": "+39 333 6667778",
+      "numPassengers": 2,
+      "returnWaitTime": 20.0
+    },
+    {
+      "plateNumber": "SS-707-TT",
+      "ownerName": "David Beckham",
+      "contact": "+39 333 7778889",
+      "numPassengers": 3,
+      "returnWaitTime": 28.0
+    },
+    {
+      "plateNumber": "UU-808-VV",
+      "ownerName": "Sarah Connor",
+      "contact": "+39 333 8889990",
+      "numPassengers": 1,
+      "returnWaitTime": 16.0
+    },
+    {
+      "plateNumber": "WW-909-XX",
+      "ownerName": "Peter Parker",
+      "contact": "+39 333 9990001",
+      "numPassengers": 4,
+      "returnWaitTime": 24.0
+    },
+    {
+      "plateNumber": "YY-111-ZZ",
+      "ownerName": "Tony Stark",
+      "contact": "+39 333 1239876",
+      "numPassengers": 2,
+      "returnWaitTime": 26.0
+    },
+    {
+      "plateNumber": "AB-222-CD",
+      "ownerName": "Bruce Wayne",
+      "contact": "+39 333 9871234",
+      "numPassengers": 1,
+      "returnWaitTime": 11.0
+    },
+    {
+      "plateNumber": "EF-333-GH",
+      "ownerName": "Clark Kent",
+      "contact": "+39 333 5550101",
+      "numPassengers": 3,
+      "returnWaitTime": 19.0
+    },
+    {
+      "plateNumber": "IJ-444-KL",
+      "ownerName": "Diana Prince",
+      "contact": "+39 333 6660202",
+      "numPassengers": 2,
+      "returnWaitTime": 21.0
+    },
+    {
+      "plateNumber": "MN-555-OP",
+      "ownerName": "Barry Allen",
+      "contact": "+39 333 7770303",
+      "numPassengers": 4,
+      "returnWaitTime": 29.0
+    },
+    {
+      "plateNumber": "QR-666-ST",
+      "ownerName": "Arthur Curry",
+      "contact": "+39 333 8880404",
+      "numPassengers": 1,
+      "returnWaitTime": 13.0
+    },
+    {
+      "plateNumber": "UV-777-WX",
+      "ownerName": "Hal Jordan",
+      "contact": "+39 333 9990505",
+      "numPassengers": 3,
+      "returnWaitTime": 17.0
+    },
+    {
+      "plateNumber": "YZ-888-AB",
+      "ownerName": "Victor Stone",
+      "contact": "+39 333 1110606",
+      "numPassengers": 2,
+      "returnWaitTime": 23.0
     }
   ]
 }
