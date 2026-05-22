@@ -27,6 +27,9 @@ public class ValetSession
     public Transform designatedSpot;
     public Transform pickUpSpot;
     public float stateTimer;
+    public int numPassengers;
+    public int passengersPendingBoarding;
+    public float returnWaitTime;
     [System.NonSerialized]
     public bool lightReset;
     [System.NonSerialized]
@@ -39,6 +42,8 @@ public class CarDatabaseEntry
     public string plateNumber;
     public string ownerName;
     public string contact;
+    public int numPassengers;
+    public float returnWaitTime;
 }
 
 [System.Serializable]
@@ -73,6 +78,8 @@ public class ValetGuidanceSystem : MonoBehaviour
 
     [Header("Active Sessions")]
     public List<ValetSession> activeSessions = new List<ValetSession>();
+
+    public event System.Action<SmartCarNavigator, Transform> OnCarArrivedAtDropOff;
 
     private Dictionary<string, CarDatabaseEntry> carDatabaseLookup = new Dictionary<string, CarDatabaseEntry>();
 
@@ -175,12 +182,16 @@ public class ValetGuidanceSystem : MonoBehaviour
         string finalPlate = "";
         string finalOwner = "";
         string finalContact = "";
+        int finalNumPassengers = 1;
+        float finalReturnWaitTime = 15f;
 
         if (!string.IsNullOrEmpty(car.plateNumber) && carDatabaseLookup.TryGetValue(car.plateNumber, out var dbEntry))
         {
             finalPlate = dbEntry.plateNumber;
             finalOwner = dbEntry.ownerName;
             finalContact = dbEntry.contact;
+            finalNumPassengers = dbEntry.numPassengers;
+            finalReturnWaitTime = dbEntry.returnWaitTime;
             Debug.Log($"[Valet System] Database match found for plate: {finalPlate}");
         }
         else
@@ -188,6 +199,8 @@ public class ValetGuidanceSystem : MonoBehaviour
             finalPlate = !string.IsNullOrEmpty(car.plateNumber) ? car.plateNumber : GeneratePlate();
             finalOwner = dummyNames[Random.Range(0, dummyNames.Length)];
             finalContact = GenerateContact();
+            finalNumPassengers = Random.Range(1, 5); // 1 to 4 passengers
+            finalReturnWaitTime = Random.Range(10f, 30f); // 10s to 30s wait time
             Debug.Log($"[Valet System] No database match for plate: '{car.plateNumber}'. Generated random owner details.");
         }
 
@@ -200,7 +213,10 @@ public class ValetGuidanceSystem : MonoBehaviour
             contact = finalContact,
             designatedSpot = parkingSpot,
             dropOffSpot = dropSpot,
-            stateTimer = 0f
+            stateTimer = 0f,
+            numPassengers = finalNumPassengers,
+            returnWaitTime = finalReturnWaitTime,
+            passengersPendingBoarding = 0
         };
 
         Debug.Log($"<color=cyan>[Valet System] Registered Car: {car.name}</color>\n" +
@@ -234,8 +250,8 @@ public class ValetGuidanceSystem : MonoBehaviour
         car.OnDestinationReached += handler;
         activeSessions.Add(session);
 
-        // Turn the light turquoise to indicate autopark mode (semi-transparent)
-        car.SetAutoparkLightColor(new Color(0f, 0.9f, 0.9f, 0.12f));
+        // The light will be set to turquoise by the Entrance Barrier Gate script once it opens.
+        // car.SetAutoparkLightColor(new Color(0f, 0.9f, 0.9f, 0.12f));
 
         car.AssignRouteAndSpot(path, dropSpot, reverseOnStart: false);
     }
@@ -247,9 +263,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         {
             ValetSession session = activeSessions[i];
 
-            if (session.state == ValetState.AtDropOff ||
-                session.state == ValetState.Parked ||
-                session.state == ValetState.AtPickUp)
+            if (session.state == ValetState.AtDropOff)
             {
                 session.stateTimer -= Time.deltaTime;
                 if (session.stateTimer <= 0)
@@ -279,6 +293,7 @@ public class ValetGuidanceSystem : MonoBehaviour
                 session.state = ValetState.AtDropOff;
                 session.stateTimer = dropOffWaitTime;
                 Debug.Log($"[Valet System] {session.car.name} is dropping off passengers for {dropOffWaitTime}s.");
+                OnCarArrivedAtDropOff?.Invoke(session.car, session.dropOffSpot);
                 break;
 
             case ValetState.MovingToPark:
@@ -399,8 +414,50 @@ public class ValetGuidanceSystem : MonoBehaviour
         }
     }
 
+    public void RecallCar(SmartCarNavigator car)
+    {
+        ValetSession session = activeSessions.Find(s => s.car == car);
+        if (session != null && session.state == ValetState.Parked)
+        {
+            AdvanceSessionState(session);
+        }
+        else
+        {
+            Debug.LogWarning($"[Valet System] Cannot recall car {car.name} because it is in state {(session != null ? session.state.ToString() : "null")}");
+        }
+    }
+
+    public void CompletePassengerBoarding(SmartCarNavigator car)
+    {
+        ValetSession session = activeSessions.Find(s => s.car == car);
+        if (session != null && session.state == ValetState.AtPickUp)
+        {
+            AdvanceSessionState(session);
+        }
+        else
+        {
+            Debug.LogWarning($"[Valet System] Cannot complete boarding for car {car.name} because it is in state {(session != null ? session.state.ToString() : "null")}");
+        }
+    }
+
+    public void PassengerBoarded(SmartCarNavigator car)
+    {
+        ValetSession session = activeSessions.Find(s => s.car == car);
+        if (session != null)
+        {
+            session.passengersPendingBoarding--;
+            Debug.Log($"[Valet System] Passenger boarded {car.name}. Remaining passengers: {session.passengersPendingBoarding}");
+            if (session.passengersPendingBoarding <= 0)
+            {
+                Debug.Log($"[Valet System] All passengers boarded {car.name}. Triggering exit departure.");
+                CompletePassengerBoarding(car);
+            }
+        }
+    }
+
     private Transform GetFreeParkingSpot()
     {
+        List<Transform> freeSpots = new List<Transform>();
         foreach (var spot in allParkingSpots)
         {
             if (spot == null) continue;
@@ -413,8 +470,18 @@ public class ValetGuidanceSystem : MonoBehaviour
                     break;
                 }
             }
-            if (!isOccupied) return spot;
+            if (!isOccupied)
+            {
+                freeSpots.Add(spot);
+            }
         }
+
+        if (freeSpots.Count > 0)
+        {
+            int randomIndex = Random.Range(0, freeSpots.Count);
+            return freeSpots[randomIndex];
+        }
+
         return null;
     }
 

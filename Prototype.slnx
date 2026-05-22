@@ -47,10 +47,10 @@
   <Project Path="Unity.Entities.Editor.csproj" />
   <Project Path="HFDownloader.csproj" />
   <Project Path="Unity.InternalAPIEditorBridge.002.csproj" />
+  <Project Path="Unity.Animation.Rigging.Editor.csproj" />
   <Project Path="Unity.AI.Navigation.Updater.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Integrations.Profiler.Editor.csproj" />
-  <Project Path="Unity.Animation.Rigging.Editor.csproj" />
   <Project Path="Unity.AI.Search.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Agent.Dynamic.Extension.Editor.csproj" />
   <Project Path="Unity.Collections.csproj" />
@@ -68,6 +68,7 @@
   <Project Path="Unity.XR.OpenXR.Editor.csproj" />
   <Project Path="Unity.XR.Interaction.Toolkit.Samples.DeviceSimulator.csproj" />
   <Project Path="glTFast.Documentation.Examples.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.XR.Interaction.Toolkit.Analytics.Editor.csproj" />
   <Project Path="Unity.ProBuilder.KdTree.csproj" />
   <Project Path="Unity.XR.Management.Editor.csproj" />
@@ -102,7 +103,6 @@
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="UnityEditor.XR.LegacyInputHelpers.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.XR.Management.csproj" />
   <Project Path="Unity.Core.Editor.csproj" />
   <Project Path="Unity.Mathematics.Extensions.csproj" />

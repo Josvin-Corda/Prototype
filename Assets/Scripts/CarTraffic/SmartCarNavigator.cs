@@ -23,6 +23,15 @@ public class SmartCarNavigator : MonoBehaviour
     private NavMeshAgent agent;
     private bool isParked = true; 
     private bool isReversing = false;
+    private ValetGuidanceSystem valetSystem;
+    private bool isSafetyStopped = false;
+    private bool isBarrierStopped = false;
+
+    public bool IsBarrierStopped
+    {
+        get => isBarrierStopped;
+        set => isBarrierStopped = value;
+    }
 
     private Transform wheelFL;
     private Transform wheelFR;
@@ -58,6 +67,8 @@ public class SmartCarNavigator : MonoBehaviour
         wheelFR = transform.Find("Wheel_FR");
         wheelRL = transform.Find("Wheel_RL");
         wheelRR = transform.Find("Wheel_RR");
+
+        valetSystem = Object.FindAnyObjectByType<ValetGuidanceSystem>();
     }
 
     void Start()
@@ -144,43 +155,66 @@ public class SmartCarNavigator : MonoBehaviour
                 }
             }
         }
-        else if (agent.enabled && agent.isOnNavMesh && !agent.isStopped)
+        else if (agent.enabled && agent.isOnNavMesh)
         {
-            // Get target speed from agent's pathfinding velocity
-            Vector3 desiredVel = agent.desiredVelocity;
-            currentSpeed = desiredVel.magnitude;
+            bool stoppedBySafety = CheckTrafficSafety() || isBarrierStopped;
 
-            if (currentSpeed > 0.01f)
+            if (stoppedBySafety)
             {
-                // Smoothly rotate the heading towards the steering target
-                Vector3 targetDir = agent.steeringTarget - transform.position;
-                targetDir.y = 0f; // Keep rotation in horizontal plane
-                if (targetDir.sqrMagnitude > 0.001f)
+                if (!agent.isStopped)
                 {
-                    Quaternion targetRot = Quaternion.LookRotation(targetDir.normalized, Vector3.up);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 6f);
+                    agent.isStopped = true;
+                }
+                currentSpeed = 0f;
+                steerAngle = 0f;
+                agent.nextPosition = transform.position;
+            }
+            else
+            {
+                if (agent.isStopped)
+                {
+                    agent.isStopped = false;
                 }
 
-                // Calculate visual wheel steer angle
-                Vector3 localTarget = transform.InverseTransformPoint(agent.steeringTarget);
-                float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
-                steerAngle = Mathf.Clamp(targetAngle, -maxSteerAngle, maxSteerAngle);
-            }
+                if (!agent.isStopped)
+                {
+                    // Get target speed from agent's pathfinding velocity
+                    Vector3 desiredVel = agent.desiredVelocity;
+                    currentSpeed = desiredVel.magnitude;
 
-            // Move the vehicle strictly forward along its current heading (horizontal movement)
-            Vector3 movement = transform.forward * currentSpeed * Time.deltaTime;
-            transform.position += movement;
+                    if (currentSpeed > 0.01f)
+                    {
+                        // Smoothly rotate the heading towards the steering target
+                        Vector3 targetDir = agent.steeringTarget - transform.position;
+                        targetDir.y = 0f; // Keep rotation in horizontal plane
+                        if (targetDir.sqrMagnitude > 0.001f)
+                        {
+                            Quaternion targetRot = Quaternion.LookRotation(targetDir.normalized, Vector3.up);
+                            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 6f);
+                        }
 
-            // Snap the transform's Y coordinate to the agent's nextPosition.y (the NavMesh height)
-            transform.position = new Vector3(transform.position.x, agent.nextPosition.y, transform.position.z);
+                        // Calculate visual wheel steer angle
+                        Vector3 localTarget = transform.InverseTransformPoint(agent.steeringTarget);
+                        float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
+                        steerAngle = Mathf.Clamp(targetAngle, -maxSteerAngle, maxSteerAngle);
+                    }
 
-            // Sync the agent's internal simulated position with the actual vehicle position
-            agent.nextPosition = transform.position;
+                    // Move the vehicle strictly forward along its current heading (horizontal movement)
+                    Vector3 movement = transform.forward * currentSpeed * Time.deltaTime;
+                    transform.position += movement;
 
-            // Prevent path planning drift
-            if (Vector3.Distance(transform.position, agent.nextPosition) > 1.5f)
-            {
-                agent.nextPosition = transform.position;
+                    // Snap the transform's Y coordinate to the agent's nextPosition.y (the NavMesh height)
+                    transform.position = new Vector3(transform.position.x, agent.nextPosition.y, transform.position.z);
+
+                    // Sync the agent's internal simulated position with the actual vehicle position
+                    agent.nextPosition = transform.position;
+
+                    // Prevent path planning drift
+                    if (Vector3.Distance(transform.position, agent.nextPosition) > 1.5f)
+                    {
+                        agent.nextPosition = transform.position;
+                    }
+                }
             }
         }
 
@@ -188,7 +222,7 @@ public class SmartCarNavigator : MonoBehaviour
         UpdateVisualWheels(currentSpeed, steerAngle);
 
         // Check if we arrived at the current target
-        if (agent.enabled && agent.isOnNavMesh && !agent.pathPending && agent.hasPath && agent.remainingDistance <= agent.stoppingDistance)
+        if (agent.enabled && agent.isOnNavMesh && !agent.pathPending && agent.hasPath && agent.remainingDistance <= agent.stoppingDistance && !isSafetyStopped && !isBarrierStopped)
         {
             // 1. Are there more road nodes to follow?
             if (currentPath != null && pathIndex < currentPath.Count - 1)
@@ -260,23 +294,41 @@ public class SmartCarNavigator : MonoBehaviour
                         targetPos.y = transform.position.y;
                     }
                     
+                    // Calculate static travel direction once at the start of segment
+                    Vector3 travelDir = targetPos - transform.position;
+                    travelDir.y = 0f;
+                    Vector3 staticDir = travelDir.sqrMagnitude > 0.001f ? travelDir.normalized : -transform.forward;
+                    
                     while (Vector3.Distance(transform.position, targetPos) > 0.1f)
                     {
                         // Rotate the heading so that the rear of the car faces targetPos
                         Vector3 dirToTarget = targetPos - transform.position;
                         dirToTarget.y = 0f;
-                        if (dirToTarget.sqrMagnitude > 0.001f)
+                        
+                        Vector3 lookDir;
+                        if (dirToTarget.magnitude < 1.0f)
+                        {
+                            // Close to target, use static segment direction to prevent spinning
+                            lookDir = staticDir;
+                        }
+                        else
+                        {
+                            lookDir = dirToTarget.normalized;
+                        }
+
+                        if (lookDir.sqrMagnitude > 0.001f)
                         {
                             // Rear faces target, so forward faces away
-                            Quaternion targetRot = Quaternion.LookRotation(-dirToTarget.normalized, Vector3.up);
+                            Quaternion targetRot = Quaternion.LookRotation(-lookDir, Vector3.up);
                             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 6f);
                         }
 
                         // Move the vehicle strictly backward towards the target node
                         transform.position = Vector3.MoveTowards(transform.position, targetPos, reverseSpeed * Time.deltaTime);
 
-                        // Update visual wheel spin and steering visuals
-                        Vector3 localTarget = transform.InverseTransformPoint(targetPos);
+                        // Update visual wheel spin and steering visuals using static steering vector when close
+                        Vector3 steerTargetPos = (dirToTarget.magnitude < 1.0f) ? (transform.position + staticDir) : targetPos;
+                        Vector3 localTarget = transform.InverseTransformPoint(steerTargetPos);
                         float steerAngle = Mathf.Atan2(localTarget.x, -localTarget.z) * Mathf.Rad2Deg;
                         steerAngle = Mathf.Clamp(steerAngle, -maxSteerAngle, maxSteerAngle);
                         UpdateVisualWheels(-reverseSpeed, steerAngle);
@@ -447,5 +499,57 @@ public class SmartCarNavigator : MonoBehaviour
             if (result != null) return result;
         }
         return null;
+    }
+
+    private bool CheckTrafficSafety()
+    {
+        if (isParked || isReversing)
+        {
+            isSafetyStopped = false;
+            return false;
+        }
+
+        SmartCarNavigator[] allCars = Object.FindObjectsByType<SmartCarNavigator>(FindObjectsSortMode.None);
+        bool hazardFound = false;
+
+        foreach (var other in allCars)
+        {
+            if (other == this) continue;
+
+            // Ignore cars that are officially parked in their designated spot
+            if (valetSystem != null)
+            {
+                var otherSession = valetSystem.activeSessions.Find(s => s.car == other);
+                if (otherSession != null && otherSession.state == ValetState.Parked)
+                {
+                    continue;
+                }
+            }
+
+            Vector3 diff = other.transform.position - transform.position;
+            diff.y = 0f; // Horizontal distance check
+            float dist = diff.magnitude;
+
+            if (dist > 0.001f)
+            {
+                Vector3 dirToOther = diff.normalized;
+                float dot = Vector3.Dot(transform.forward, dirToOther);
+
+                // Cone check: dot > 0.7 (approx. 45 degrees either side of forward)
+                if (dot > 0.7f)
+                {
+                    // Apply hysteresis: 4.5m safety threshold to stop, 6.0m threshold to resume
+                    float threshold = isSafetyStopped ? 6.0f : 4.5f;
+                    if (dist < threshold)
+                    {
+                        hazardFound = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        isSafetyStopped = hazardFound;
+        return isSafetyStopped;
     }
 }
