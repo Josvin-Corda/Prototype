@@ -16,7 +16,7 @@ public class EntranceTrigger : MonoBehaviour
 
         if (car != null)
         {
-            var guidanceSystem = Object.FindObjectOfType<ValetGuidanceSystem>();
+            var guidanceSystem = Object.FindAnyObjectByType<ValetGuidanceSystem>();
             if (guidanceSystem != null)
             {
                 guidanceSystem.RegisterCar(car);

@@ -26,6 +26,11 @@ public class ParkingSimulator : MonoBehaviour
 
     private void Start()
     {
+        if (allParkingSpots != null)
+        {
+            allParkingSpots.RemoveAll(spot => spot == null);
+        }
+
         if (useTestMode)
         {
             if (testCar != null && testSpot != null)
@@ -41,7 +46,7 @@ public class ParkingSimulator : MonoBehaviour
         else
         {
             // Normal operation
-            if (allParkingSpots.Count > 0 && activeCars.Count > 0)
+            if (allParkingSpots != null && allParkingSpots.Count > 0 && activeCars.Count > 0)
             {
                 // Start the timed loop
                 StartCoroutine(AssignmentLoop());

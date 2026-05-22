@@ -40,6 +40,7 @@
   <Project Path="Unity.Scenes.Editor.csproj" />
   <Project Path="glTFast.Export.csproj" />
   <Project Path="Unity.Serialization.csproj" />
+  <Project Path="Unity.Animation.Rigging.csproj" />
   <Project Path="Unity.AI.Image.csproj" />
   <Project Path="Unity.Rider.Editor.csproj" />
   <Project Path="Unity.AI.Generators.IO.csproj" />
@@ -49,6 +50,7 @@
   <Project Path="Unity.AI.Navigation.Updater.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Integrations.Profiler.Editor.csproj" />
+  <Project Path="Unity.Animation.Rigging.Editor.csproj" />
   <Project Path="Unity.AI.Search.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Agent.Dynamic.Extension.Editor.csproj" />
   <Project Path="Unity.Collections.csproj" />
@@ -107,6 +109,7 @@
   <Project Path="Unity.XR.OpenXR.Features.RuntimeDebugger.csproj" />
   <Project Path="UnityEngine.SpatialTracking.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.OculusQuestSupport.Editor.csproj" />
+  <Project Path="Unity.Animation.Rigging.DocCodeExamples.csproj" />
   <Project Path="Unity.AI.Assistant.Bridge.Editor.csproj" />
   <Project Path="UnityEngine.XR.LegacyInputHelpers.csproj" />
   <Project Path="Unity.Transforms.Hybrid.csproj" />

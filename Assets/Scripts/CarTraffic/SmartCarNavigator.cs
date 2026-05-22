@@ -64,6 +64,11 @@ public class SmartCarNavigator : MonoBehaviour
     {
         if (agent != null)
         {
+            if (agent.isOnNavMesh)
+            {
+                return;
+            }
+
             UnityEngine.AI.NavMeshQueryFilter filter = new UnityEngine.AI.NavMeshQueryFilter();
             filter.agentTypeID = agent.agentTypeID;
             filter.areaMask = UnityEngine.AI.NavMesh.AllAreas;
@@ -282,23 +287,7 @@ public class SmartCarNavigator : MonoBehaviour
             }
             else
             {
-                // Fallback: Existing blind/timer-based reverse for standard straight spots
-                float reverseSteerSign = 0f;
-                if (route != null && route.Count > 0)
-                {
-                    // Look ahead in path nodes to determine which way the road turns
-                    for (int i = 0; i < route.Count; i++)
-                    {
-                        Vector3 localNodePos = transform.InverseTransformPoint(route[i].transform.position);
-                        if (Mathf.Abs(localNodePos.x) > 1.0f)
-                        {
-                            // If path goes to the right, swing rear of car to the left (rotate Y clockwise)
-                            reverseSteerSign = localNodePos.x >= 0f ? 1f : -1f;
-                            break;
-                        }
-                    }
-                }
-
+                // Fallback: Simple straight reverse for standard spots
                 float timer = 0f;
                 while (timer < reverseTime)
                 {
@@ -316,13 +305,9 @@ public class SmartCarNavigator : MonoBehaviour
                         groundedY = fallbackHit.position.y + agent.baseOffset;
                     }
                     transform.position = new Vector3(transform.position.x, groundedY, transform.position.z);
-                    
-                    // Turn rear of the vehicle smoothly
-                    float reverseTurnRate = 25f * reverseSteerSign; // Rotate up to 25 degrees/sec
-                    transform.Rotate(0, reverseTurnRate * Time.deltaTime, 0);
 
-                    // Update visual wheel steering and rolling
-                    UpdateVisualWheels(-reverseSpeed, 35f * reverseSteerSign);
+                    // Update visual wheel rolling (no steering)
+                    UpdateVisualWheels(-reverseSpeed, 0f);
 
                     timer += Time.deltaTime;
                     yield return null;

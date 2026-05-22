@@ -16,7 +16,7 @@ public class TrafficNetwork : MonoBehaviour
         Instance = this;
         // Automatically find all nodes in the scene
         allNodes.Clear();
-        allNodes.AddRange(FindObjectsOfType<TrafficNode>());
+        allNodes.AddRange(FindObjectsByType<TrafficNode>(FindObjectsSortMode.None));
     }
 
     /// <summary>

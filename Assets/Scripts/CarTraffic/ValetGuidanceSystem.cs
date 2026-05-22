@@ -29,6 +29,8 @@ public class ValetSession
     public float stateTimer;
     [System.NonSerialized]
     public bool lightReset;
+    [System.NonSerialized]
+    public System.Action arrivalHandler;
 }
 
 [System.Serializable]
@@ -66,7 +68,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     public Transform exitSpot;
 
     [Header("Testing")]
-    public bool testOnStart = true;
+    public bool testOnStart = false;
     public SmartCarNavigator testCar;
 
     [Header("Active Sessions")]
@@ -78,6 +80,9 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         activeSessions.Clear();
         LoadCarDatabase();
+        allParkingSpots.RemoveAll(spot => spot == null);
+        dropOffSpots.RemoveAll(spot => spot == null);
+        pickUpSpots.RemoveAll(spot => spot == null);
     }
 
     private void LoadCarDatabase()
@@ -129,7 +134,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         yield return new WaitForSeconds(1.5f); // wait for network to initialize
         if (testCar == null)
         {
-            testCar = Object.FindObjectOfType<SmartCarNavigator>();
+            testCar = Object.FindAnyObjectByType<SmartCarNavigator>();
         }
         if (testCar != null)
         {
@@ -224,7 +229,9 @@ public class ValetGuidanceSystem : MonoBehaviour
         }
 
         // 5. Subscribe to arrived event and start moving
-        car.OnDestinationReached += () => OnCarReachedDestination(session);
+        System.Action handler = () => OnCarReachedDestination(session);
+        session.arrivalHandler = handler;
+        car.OnDestinationReached += handler;
         activeSessions.Add(session);
 
         // Turn the light turquoise to indicate autopark mode (semi-transparent)
@@ -294,10 +301,14 @@ public class ValetGuidanceSystem : MonoBehaviour
                 session.car.ResetAutoparkLight();
 
                 // Clean up events
-                session.car.OnDestinationReached -= () => OnCarReachedDestination(session);
+                if (session.arrivalHandler != null)
+                {
+                    session.car.OnDestinationReached -= session.arrivalHandler;
+                    session.arrivalHandler = null;
+                }
                 
-                // Disable vehicle
-                session.car.gameObject.SetActive(false);
+                // Destroy spawned vehicle to free memory
+                Destroy(session.car.gameObject);
                 
                 activeSessions.Remove(session);
                 break;
@@ -392,6 +403,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         foreach (var spot in allParkingSpots)
         {
+            if (spot == null) continue;
             bool isOccupied = false;
             foreach (var s in activeSessions)
             {
@@ -410,6 +422,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         foreach (var spot in dropOffSpots)
         {
+            if (spot == null) continue;
             bool isOccupied = false;
             foreach (var s in activeSessions)
             {
@@ -428,6 +441,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         foreach (var spot in pickUpSpots)
         {
+            if (spot == null) continue;
             bool isOccupied = false;
             foreach (var s in activeSessions)
             {
