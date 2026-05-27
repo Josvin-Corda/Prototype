@@ -3,27 +3,60 @@ using UnityEngine;
 public class TeleportButton : MonoBehaviour
 {
     [Header("Riferimenti Spaziali")]
-    [Tooltip("Trascina qui l'XR Origin della tua scena")]
-    public Transform xrOrigin; 
-    
-    [Tooltip("Trascina qui il Punto di Arrivo (Empty Object)")]
-    public Transform targetLocation; 
+    [SerializeField] private GameObject xrOrigin;      // Il tuo "XR Origin (XR Rig)"
+    [SerializeField] private Transform targetLocation; // Per uscire = ArrivalPoint | Per entrare = StartingPoint
+    [SerializeField] private Transform vehicle;        // NUOVO: Trascina qui la macchina (es. tesla_car1)
 
-    // Questa è la funzione che verrà richiamata dal pulsante
+    [Header("Riferimenti Avatar")]
+    [SerializeField] private GameObject avatar;         // Il tuo personaggio (npc_csl_00_character...)
+
+    /// <summary>
+    /// DA USARE SUL BOTTONE INTERNO (ChangeButton) PER USCIRE
+    /// </summary>
     public void TrasportaGiocatore()
     {
-        // Se i riferimenti sono stati inseriti correttamente nell'editor
-        if (xrOrigin != null && targetLocation != null)
+        if (xrOrigin == null || targetLocation == null || avatar == null)
         {
-            // Sovrascrive la posizione e la rotazione attuali con quelle di destinazione
-            xrOrigin.position = targetLocation.position;
-            xrOrigin.rotation = targetLocation.rotation;
-            
-            Debug.Log("Teletrasporto eseguito con successo!");
+            Debug.LogError("TeleportButton: Mancano dei riferimenti nell'Inspector!");
+            return;
         }
-        else
+
+        xrOrigin.transform.SetParent(null);
+        xrOrigin.transform.position = targetLocation.position;
+        xrOrigin.transform.rotation = targetLocation.rotation;
+
+        avatar.transform.SetParent(xrOrigin.transform);
+        avatar.transform.localPosition = Vector3.zero;
+        avatar.transform.localRotation = Quaternion.identity;
+        avatar.SetActive(true);
+
+        Debug.Log("Uscito dall'auto! Avatar attivato.");
+    }
+
+    /// <summary>
+    /// NUOVO: DA USARE SUL BOTTONE ESTERNO (ReturnButton) PER RIENTRARE
+    /// </summary>
+    public void RientraInMacchina()
+    {
+        if (xrOrigin == null || targetLocation == null || avatar == null || vehicle == null)
         {
-            Debug.LogWarning("Mancano i riferimenti allo script TeleportButton!");
+            Debug.LogError("TeleportButton: Mancano dei riferimenti per il rientro nell'Inspector!");
+            return;
         }
+
+        // 1. Sgancia l'avatar dallo XR Rig e rimettilo libero nella radice della scena
+        avatar.transform.SetParent(null);
+
+        // 2. Disattiva l'avatar
+        avatar.SetActive(false);
+
+        // 3. Rendi di nuovo lo XR Rig figlio della macchina
+        xrOrigin.transform.SetParent(vehicle);
+
+        // 4. Riposiziona il visore sul sedile (StartingPoint)
+        xrOrigin.transform.position = targetLocation.position;
+        xrOrigin.transform.rotation = targetLocation.rotation;
+
+        Debug.Log("Rientrato in macchina! Avatar disattivato e gerarchie ripristinate.");
     }
 }
