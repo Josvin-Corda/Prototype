@@ -91,6 +91,10 @@ public class CrosswalkTrafficLight : MonoBehaviour
     // Cars that are currently being held at the stopline waiting for NPC to clear
     private readonly HashSet<SmartCarNavigator> heldCars = new HashSet<SmartCarNavigator>();
 
+    // Cars that TRIGGERED the current CarApproaching/CarCrossing cycle.
+    // IsCarNearCrosswalk only tracks these — prevents unrelated cars from extending the red.
+    private readonly HashSet<SmartCarNavigator> activeCrossingCars = new HashSet<SmartCarNavigator>();
+
     private static readonly Color OffColor = new Color(0.15f, 0.15f, 0.15f, 1f);
 
     // ─── Public Properties ────────────────────────────────────────────────────────
@@ -188,6 +192,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
                 stateTimer += Time.deltaTime;
                 if (stateTimer >= cooldownDuration)
                 {
+                    activeCrossingCars.Clear(); // reset for next cycle
                     currentState = SignalState.CarsFree;
                     stateTimer   = 0f;
                     UpdateVisuals();
@@ -200,16 +205,31 @@ public class CrosswalkTrafficLight : MonoBehaviour
     // ─── State Transitions ────────────────────────────────────────────────────────
     private void EnterCarApproaching()
     {
+        // Record exactly which cars are currently in the critical zone —
+        // these are the only ones we will track through the rest of the cycle.
+        activeCrossingCars.Clear();
+        SmartCarNavigator[] allCars = Object.FindObjectsByType<SmartCarNavigator>(FindObjectsSortMode.None);
+        foreach (var car in allCars)
+        {
+            if (car == null || car.IsParked) continue;
+            if ((criticalNode1 != null && car.IsNodeWithinNextSegments(criticalNode1, criticalZoneNodeThreshold))
+             || (criticalNode2 != null && car.IsNodeWithinNextSegments(criticalNode2, criticalZoneNodeThreshold)))
+            {
+                activeCrossingCars.Add(car);
+            }
+        }
+
         currentState = SignalState.CarApproaching;
         stateTimer   = 0f;
         UpdateVisuals();
-        Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Car approaching → RED");
+        Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Car approaching → RED (tracking {activeCrossingCars.Count} car(s))");
     }
 
     private void EnterCarCrossing()
     {
-        currentState = SignalState.CarCrossing;
-        stateTimer   = 0f;
+        currentState  = SignalState.CarCrossing;
+        stateTimer    = 0f;
+        postClearTimer = 0f;
         UpdateVisuals();
         Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Car crossing → holding RED");
     }
@@ -320,16 +340,18 @@ public class CrosswalkTrafficLight : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns true if any active car is still near the crosswalk centre X (hasn't fully cleared it yet).
+    /// Returns true if any of the cars that TRIGGERED this crossing cycle
+    /// are still within the crosswalk X zone. Ignores all other cars in the
+    /// scene so unrelated vehicles can't accidentally delay the green signal.
     /// </summary>
     private bool IsCarNearCrosswalk()
     {
-        SmartCarNavigator[] allCars = Object.FindObjectsByType<SmartCarNavigator>(FindObjectsSortMode.None);
-        foreach (var car in allCars)
+        foreach (var car in activeCrossingCars)
         {
-            if (car == null || car.IsParked) continue;
+            if (car == null) continue;
+            if (car.IsParked) continue; // it parked — definitely done
             float dx = Mathf.Abs(car.transform.position.x - crosswalkCentreX);
-            if (dx <= crosswalkHalfWidth + 3f) // small extra margin
+            if (dx <= crosswalkHalfWidth + 3f)
                 return true;
         }
         return false;
