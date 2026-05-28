@@ -183,6 +183,8 @@ public class HumanNPCBehavior : MonoBehaviour
 
         if (agent == null || animator == null) return;
 
+        CheckCrosswalkWaiting();
+
         // 1. Synchronize agent velocity magnitude with Animator Speed float
         float speed = agent.velocity.magnitude;
         animator.SetFloat("Speed", speed);
@@ -540,4 +542,83 @@ public class HumanNPCBehavior : MonoBehaviour
             animator.SetBool("IsSitting", true);
         }
     }
+
+    private void CheckCrosswalkWaiting()
+    {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+
+        // Only halt NPCs that are actively walking
+        if (currentState != NPCState.WalkingToCenter &&
+            currentState != NPCState.WalkingToElevator &&
+            currentState != NPCState.WalkingToTotem &&
+            currentState != NPCState.WalkingToCenterForReturn &&
+            currentState != NPCState.WalkingToPickUp &&
+            currentState != NPCState.Boarding)
+        {
+            return;
+        }
+
+        CrosswalkTrafficLight[] crosswalks = Object.FindObjectsByType<CrosswalkTrafficLight>(FindObjectsSortMode.None);
+        bool shouldStop = false;
+
+        foreach (var crosswalk in crosswalks)
+        {
+            if (crosswalk == null) continue;
+
+            // Light is only green (CanPedestriansCross) when no car is active.
+            // If a car is active, pedestrians must wait.
+            if (crosswalk.CanPedestriansCross) continue;
+
+            // Define the crosswalk approach zone: slightly in front of the crosswalk bounds
+            float centreX     = crosswalk.CrosswalkCentreX;
+            float halfWidth   = crosswalk.CrosswalkHalfWidth;
+            float halfDepth   = crosswalk.CrosswalkHalfDepth;
+            float approachPad = 2.0f; // extra buffer before the crosswalk edge
+
+            float minX = centreX - halfWidth - approachPad;
+            float maxX = centreX + halfWidth + approachPad;
+            float centreZ = crosswalk.CrosswalkCentreZ;
+            float minZ = centreZ - halfDepth - approachPad;
+            float maxZ = centreZ + halfDepth + approachPad;
+
+            Vector3 pos = transform.position;
+
+            // Is the NPC inside (or approaching) the crosswalk zone?
+            bool inZone = pos.x >= minX && pos.x <= maxX && pos.z >= minZ && pos.z <= maxZ;
+            if (!inZone) continue;
+
+            // Is the NPC heading towards (or across) the crosswalk centre?
+            Vector3 toCentre = new Vector3(centreX, pos.y, centreZ) - pos;
+            Vector3 toDest   = agent.destination - pos;
+            toCentre.y = 0f;
+            toDest.y   = 0f;
+
+            if (toCentre.sqrMagnitude < 0.001f || toDest.sqrMagnitude < 0.001f) continue;
+
+            float dot = Vector3.Dot(toCentre.normalized, toDest.normalized);
+            if (dot > 0.1f)
+            {
+                shouldStop = true;
+                break;
+            }
+        }
+
+        if (shouldStop)
+        {
+            if (!agent.isStopped)
+            {
+                agent.isStopped = true;
+                Debug.Log($"[HumanNPCBehavior] {gameObject.name}: Stopping — car is active at crosswalk (signal RED).");
+            }
+        }
+        else
+        {
+            if (agent.isStopped)
+            {
+                agent.isStopped = false;
+                Debug.Log($"[HumanNPCBehavior] {gameObject.name}: Resuming — crosswalk is GREEN.");
+            }
+        }
+    }
+
 }

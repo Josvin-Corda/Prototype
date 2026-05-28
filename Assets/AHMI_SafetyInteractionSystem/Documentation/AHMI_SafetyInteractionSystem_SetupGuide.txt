@@ -1,0 +1,417 @@
+AHMI SAFETY INTERACTION SYSTEM - SETUP GUIDE
+=============================================
+
+Purpose
+-------
+The AHMI Safety Interaction System is a modular Unity asset designed to detect dynamic users around an autonomous vehicle and trigger a safety waiting state.
+
+The system is project-independent and can be exported as a Unity package, then reused across different versions of the parking-lot simulation.
+
+The asset does not directly control the vehicle, the UI, the audio system, or the dashboard logic. Instead, it exposes public UnityEvents that can be wired in the Inspector to project-specific components.
+
+
+Core Concept
+------------
+The asset follows this logic:
+
+Detection Zone detects pedestrian / vehicle / dynamic user
+-> Safety waiting state starts
+-> External systems are notified through UnityEvents
+-> Vehicle can brake smoothly
+-> Warning lights and audio can be activated
+-> Internal driver screen can show a waiting message
+-> ETA/dashboard systems can be paused or recalculated
+-> When the area is clear, the safety waiting state ends
+-> External systems are notified again through UnityEvents
+
+
+Recommended Folder Structure
+----------------------------
+Create the following folder structure inside the Unity project:
+
+Assets/AHMI_SafetyInteractionSystem
+    Prefabs
+        AHMI_SafetyInteractionSystem.prefab
+    Scripts
+        SafetyInteractionState.cs
+        SafetyTriggerDetector.cs
+        SmoothSpeedAdapter.cs
+        BlinkingLightAdapter.cs
+        SafetyAudioAdapter.cs
+        SafetyScreenAdapter.cs
+    Materials
+        Optional warning light materials
+    Audio
+        Optional alert sounds
+    Documentation
+        AHMI_SafetyInteractionSystem_SetupGuide.txt
+
+
+Required Unity Setup
+--------------------
+1. Create a new Layer called:
+
+   DynamicUser
+
+2. Assign this layer to all objects that must be detected by the autonomous vehicle, such as:
+
+   - Pedestrians
+   - Other autonomous cars
+   - Moving obstacles
+   - Any object that should trigger the safety waiting state
+
+3. Make sure each detectable object has a Collider component.
+
+4. At least one object involved in the trigger interaction must have a Rigidbody.
+   For this asset, the recommended setup is to add a Rigidbody to the AHMI_SafetyInteractionSystem prefab:
+
+   Use Gravity: false
+   Is Kinematic: true
+
+
+Prefab Structure
+----------------
+Create an empty GameObject named:
+
+   AHMI_SafetyInteractionSystem
+
+Add the following component to it:
+
+   SafetyInteractionState.cs
+
+Then create a child object named:
+
+   DetectionZone
+
+Add the following components to DetectionZone:
+
+   - Box Collider or Sphere Collider
+   - SafetyTriggerDetector.cs
+
+Set the Collider as:
+
+   Is Trigger: true
+
+Recommended collider options:
+
+A. Sphere Collider
+   Good for simple radial detection around the car.
+
+   Radius: 2.5 - 4.0 meters
+
+B. Box Collider
+   Better for a forward detection zone in front of the vehicle.
+
+   Example values:
+   Center: X 0, Y 1, Z 2.5
+   Size:   X 3, Y 2, Z 5
+
+
+Component Setup
+---------------
+On AHMI_SafetyInteractionSystem:
+
+1. SafetyInteractionState
+
+   This component stores the safety waiting state and exposes the following events:
+
+   - OnSafetyWaitStarted
+   - OnSafetyWaitEnded
+
+These events are used to wire external project-specific behaviours.
+
+
+On DetectionZone:
+
+1. SafetyTriggerDetector
+
+   Assign:
+
+   Safety State:
+       Drag the parent AHMI_SafetyInteractionSystem object here.
+
+   Detectable Layers:
+       Select the DynamicUser layer.
+
+
+Recommended Wiring
+------------------
+Use the Unity Inspector to connect the UnityEvents from SafetyInteractionState.
+
+OnSafetyWaitStarted should usually call:
+
+   - VehicleMovementAdapter.RequestStop()
+   - SmoothSpeedAdapter.RequestStop()
+   - BlinkingLightAdapter.StartBlinking()
+   - SafetyAudioAdapter.PlayAlert()
+   - SafetyScreenAdapter.ShowWaitingMessage()
+   - DashboardETA.PauseOrRecalculate()
+
+OnSafetyWaitEnded should usually call:
+
+   - VehicleMovementAdapter.RequestResume()
+   - SmoothSpeedAdapter.RequestResume()
+   - BlinkingLightAdapter.StopBlinking()
+   - SafetyAudioAdapter.StopAlert()
+   - SafetyScreenAdapter.HideWaitingMessage()
+   - DashboardETA.ResumeOrRecalculate()
+
+
+Vehicle Movement Integration
+----------------------------
+The safety asset should not directly move the vehicle.
+
+Instead, it should communicate with the vehicle movement system through an adapter or UnityEvent.
+
+If the vehicle uses a custom waypoint, node, or spline movement system, expose two public methods in that movement system:
+
+   public void RequestStop()
+   public void RequestResume()
+
+The safety system can then call these methods through UnityEvents.
+
+If using SmoothSpeedAdapter, the vehicle movement script should read:
+
+   smoothSpeedAdapter.CurrentSpeed
+
+instead of using a fixed speed value.
+
+Example:
+
+   transform.position += direction * smoothSpeedAdapter.CurrentSpeed * Time.deltaTime;
+
+
+Smooth Braking Behaviour
+------------------------
+The braking should not be abrupt.
+
+Recommended logic:
+
+   - When a dynamic user enters the detection zone, target speed becomes 0.
+   - Current speed gradually moves toward 0 using Mathf.MoveTowards.
+   - When the detection zone is clear, target speed returns to the normal driving speed.
+   - Current speed gradually accelerates back to normal speed.
+
+Suggested values:
+
+   Normal Speed: 2.0
+   Brake Rate: 2.0
+   Acceleration Rate: 1.5
+
+These values can be adjusted depending on the scale and speed of the scene.
+
+
+Warning Lights Setup
+--------------------
+Create one or more warning lights on the vehicle.
+
+Recommended light type:
+
+   - Point Light
+   - Spot Light
+   - Area Light
+
+Recommended visual style:
+
+   - Cyan / turquoise color
+   - Pulsating intensity
+   - Visible from outside the vehicle
+
+Attach BlinkingLightAdapter to the object managing the warning lights.
+
+Assign all warning Light components to the Lights array.
+
+Then wire:
+
+   OnSafetyWaitStarted -> BlinkingLightAdapter.StartBlinking()
+   OnSafetyWaitEnded   -> BlinkingLightAdapter.StopBlinking()
+
+
+Audio Setup
+-----------
+Add an AudioSource to the vehicle or to a child object.
+
+Assign the warning sound clip to the AudioSource.
+
+Recommended settings:
+
+   Play On Awake: false
+   Loop: true or false depending on the desired behaviour
+   Spatial Blend: 1.0 for 3D spatial sound, or 0.0 for UI-style sound
+
+Attach SafetyAudioAdapter and assign the AudioSource.
+
+Then wire:
+
+   OnSafetyWaitStarted -> SafetyAudioAdapter.PlayAlert()
+   OnSafetyWaitEnded   -> SafetyAudioAdapter.StopAlert()
+
+
+Internal Screen Setup
+---------------------
+The internal driver screen should only display information. It should not control the safety logic.
+
+Create a screen UI with:
+
+   - Waiting panel
+   - TextMeshPro text field
+
+Attach SafetyScreenAdapter to the screen controller object.
+
+Assign:
+
+   Waiting Panel
+   Message Text
+
+Recommended waiting message:
+
+   Waiting for pedestrian / vehicle interaction
+
+Recommended normal message:
+
+   Autonomous driving active
+
+Then wire:
+
+   OnSafetyWaitStarted -> SafetyScreenAdapter.ShowWaitingMessage()
+   OnSafetyWaitEnded   -> SafetyScreenAdapter.HideWaitingMessage()
+
+
+ETA / Dashboard Integration
+---------------------------
+The safety interaction can affect arrival time and dashboard information.
+
+The safety asset should not directly calculate ETA.
+
+Instead, the dashboard or ETA controller should expose public methods such as:
+
+   public void PauseETAUpdate()
+   public void ResumeETAUpdate()
+   public void RecalculateETA()
+   public void ShowDelayReason()
+   public void HideDelayReason()
+
+Then wire these methods from SafetyInteractionState events.
+
+Example:
+
+   OnSafetyWaitStarted -> DashboardETA.ShowDelayReason()
+   OnSafetyWaitStarted -> DashboardETA.RecalculateETA()
+   OnSafetyWaitEnded   -> DashboardETA.HideDelayReason()
+   OnSafetyWaitEnded   -> DashboardETA.RecalculateETA()
+
+
+Exporting the Asset
+-------------------
+To export the system as a reusable Unity package:
+
+1. Select the folder:
+
+   Assets/AHMI_SafetyInteractionSystem
+
+2. Right-click the folder.
+
+3. Select:
+
+   Export Package...
+
+4. Make sure all required scripts, prefabs, materials, and documentation are selected.
+
+5. Click:
+
+   Export
+
+6. Save the package with a clear name, for example:
+
+   AHMI_SafetyInteractionSystem_v1.unitypackage
+
+
+Importing into Another Project Version
+--------------------------------------
+1. Open the target Unity project.
+
+2. Import the package:
+
+   Assets -> Import Package -> Custom Package...
+
+3. Select:
+
+   AHMI_SafetyInteractionSystem_v1.unitypackage
+
+4. Import all required files.
+
+5. Drag the prefab into the scene or make it a child of the autonomous car.
+
+6. Assign the DynamicUser layer to pedestrians and other vehicles.
+
+7. Wire the UnityEvents to the project-specific movement, light, audio, screen, and dashboard systems.
+
+
+Testing Checklist
+-----------------
+Use this checklist after setup:
+
+[ ] DynamicUser layer exists.
+[ ] Pedestrians and other vehicles are assigned to DynamicUser.
+[ ] Detectable objects have Colliders.
+[ ] DetectionZone Collider has Is Trigger enabled.
+[ ] AHMI_SafetyInteractionSystem has a kinematic Rigidbody.
+[ ] SafetyTriggerDetector references SafetyInteractionState.
+[ ] Detectable Layers includes DynamicUser.
+[ ] OnSafetyWaitStarted is wired correctly.
+[ ] OnSafetyWaitEnded is wired correctly.
+[ ] Vehicle stops smoothly when a dynamic user enters the zone.
+[ ] Warning lights start blinking during the waiting state.
+[ ] Warning sound plays during the waiting state.
+[ ] Internal screen shows the waiting message.
+[ ] Vehicle resumes when the detection zone is clear.
+[ ] Lights, audio, and UI return to normal after the interaction ends.
+
+
+Common Issues
+-------------
+Issue: Trigger events are not detected.
+
+Possible causes:
+   - DetectionZone Collider is not set as Trigger.
+   - Dynamic users are not assigned to the correct layer.
+   - Detectable Layers mask does not include DynamicUser.
+   - No Rigidbody exists on either object involved in the trigger interaction.
+   - The Collider is disabled.
+
+
+Issue: The vehicle does not stop.
+
+Possible causes:
+   - OnSafetyWaitStarted is not wired to the vehicle stop method.
+   - The vehicle movement script is still using a fixed speed.
+   - SmoothSpeedAdapter.CurrentSpeed is not being used by the movement script.
+
+
+Issue: The vehicle never resumes.
+
+Possible causes:
+   - A detected object is still inside the detection zone.
+   - The trigger exit event was not fired because the object was disabled or destroyed inside the trigger.
+   - Use SafetyTriggerDetector.ClearDetection() if the scene removes detected objects dynamically.
+
+
+Issue: Lights do not blink.
+
+Possible causes:
+   - Light components are not assigned to the BlinkingLightAdapter.
+   - OnSafetyWaitStarted is not wired to StartBlinking().
+   - Light intensity values are too low.
+   - Lights are hidden or blocked by scene geometry.
+
+
+Issue: Audio does not play.
+
+Possible causes:
+   - AudioSource is not assigned.
+   - No AudioClip is assigned to the AudioSource.
+   - Play On Awake or Loop settings are not configured as intended.
+   - Volume is too low.
+   - Spatial audio distance settings are too restrictive.
+
+

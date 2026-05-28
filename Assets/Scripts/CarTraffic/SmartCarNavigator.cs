@@ -26,11 +26,53 @@ public class SmartCarNavigator : MonoBehaviour
     private ValetGuidanceSystem valetSystem;
     private bool isSafetyStopped = false;
     private bool isBarrierStopped = false;
+    private bool isSafetyWaiting = false;
+    private bool isCrosswalkStopped = false;
 
     public bool IsBarrierStopped
     {
         get => isBarrierStopped;
         set => isBarrierStopped = value;
+    }
+
+    /// <summary>Set to true by CrosswalkTrafficLight to hold the car at the stopline while an NPC is crossing.</summary>
+    public bool IsCrosswalkStopped
+    {
+        get => isCrosswalkStopped;
+        set => isCrosswalkStopped = value;
+    }
+
+    public bool IsSafetyWaiting
+    {
+        get => isSafetyWaiting;
+        set => isSafetyWaiting = value;
+    }
+
+    public void RequestSafetyStop()
+    {
+        isSafetyWaiting = true;
+    }
+
+    public void RequestSafetyResume()
+    {
+        isSafetyWaiting = false;
+        // Restore headlight look
+        if (valetSystem != null)
+        {
+            var session = valetSystem.activeSessions.Find(s => s.car == this);
+            if (session != null && session.state != ValetState.Exiting && session.state != ValetState.Exited && !session.lightReset)
+            {
+                SetAutoparkLightColor(new Color(0f, 0.9f, 0.9f, 0.12f)); // Reset to Valet Turquoise
+            }
+            else
+            {
+                ResetAutoparkLight(); // Reset to normal transparent
+            }
+        }
+        else
+        {
+            ResetAutoparkLight();
+        }
     }
 
     private Transform wheelFL;
@@ -73,6 +115,18 @@ public class SmartCarNavigator : MonoBehaviour
 
     void Start()
     {
+        // Automatically find and subscribe to safety system if present
+        AHMI.Safety.SafetyInteractionState safetyState = GetComponentInChildren<AHMI.Safety.SafetyInteractionState>();
+        if (safetyState != null)
+        {
+            safetyState.OnSafetyWaitStarted.AddListener(RequestSafetyStop);
+            safetyState.OnSafetyWaitEnded.AddListener(RequestSafetyResume);
+            Debug.Log($"[SmartCarNavigator] {gameObject.name} auto-subscribed to SafetyInteractionState on {safetyState.gameObject.name}.");
+
+            // Automatically set up and wire audio and visual safety adapters
+            SetupSafetyAudioAndLights(safetyState);
+        }
+
         if (agent != null)
         {
             if (agent.isOnNavMesh)
@@ -102,6 +156,12 @@ public class SmartCarNavigator : MonoBehaviour
     void Update()
     {
         if (isReversing) return;
+
+        // If safety waiting is active, pulsate headlights emission
+        if (isSafetyWaiting)
+        {
+            PulsateHeadlights();
+        }
 
         float currentSpeed = 0f;
         float steerAngle = 0f;
@@ -157,7 +217,7 @@ public class SmartCarNavigator : MonoBehaviour
         }
         else if (agent.enabled && agent.isOnNavMesh)
         {
-            bool stoppedBySafety = CheckTrafficSafety() || isBarrierStopped;
+            bool stoppedBySafety = CheckTrafficSafety() || isBarrierStopped || isSafetyWaiting || isCrosswalkStopped;
 
             if (stoppedBySafety)
             {
@@ -222,7 +282,7 @@ public class SmartCarNavigator : MonoBehaviour
         UpdateVisualWheels(currentSpeed, steerAngle);
 
         // Check if we arrived at the current target
-        if (agent.enabled && agent.isOnNavMesh && !agent.pathPending && agent.hasPath && agent.remainingDistance <= agent.stoppingDistance && !isSafetyStopped && !isBarrierStopped)
+        if (agent.enabled && agent.isOnNavMesh && !agent.pathPending && agent.hasPath && agent.remainingDistance <= agent.stoppingDistance && !isSafetyStopped && !isBarrierStopped && !isSafetyWaiting && !isCrosswalkStopped)
         {
             // 1. Are there more road nodes to follow?
             if (currentPath != null && pathIndex < currentPath.Count - 1)
@@ -551,5 +611,112 @@ public class SmartCarNavigator : MonoBehaviour
 
         isSafetyStopped = hazardFound;
         return isSafetyStopped;
+    }
+
+    private void SetupSafetyAudioAndLights(AHMI.Safety.SafetyInteractionState safetyState)
+    {
+        // 1. Audio Setup
+        AudioSource audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
+        audioSource.loop = true;
+        audioSource.spatialBlend = 1.0f; // 3D sound
+        audioSource.minDistance = 2.0f;
+        audioSource.maxDistance = 15.0f;
+        if (audioSource.clip == null)
+        {
+            audioSource.clip = CreateBeepClip();
+        }
+
+        AHMI.Safety.SafetyAudioAdapter audioAdapter = gameObject.GetComponent<AHMI.Safety.SafetyAudioAdapter>();
+        if (audioAdapter == null)
+        {
+            audioAdapter = gameObject.AddComponent<AHMI.Safety.SafetyAudioAdapter>();
+        }
+        
+        // Use reflection to assign private serialized field 'audioSource' on SafetyAudioAdapter
+        var audioField = typeof(AHMI.Safety.SafetyAudioAdapter).GetField("audioSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (audioField != null)
+        {
+            audioField.SetValue(audioAdapter, audioSource);
+        }
+
+        // Wire event handlers
+        safetyState.OnSafetyWaitStarted.AddListener(audioAdapter.PlayAlert);
+        safetyState.OnSafetyWaitEnded.AddListener(audioAdapter.StopAlert);
+
+        // 2. Visual Blinking Lights Setup (Dynamic lights)
+        Light[] childLights = GetComponentsInChildren<Light>(true);
+        if (childLights.Length > 0)
+        {
+            AHMI.Safety.BlinkingLightAdapter lightAdapter = gameObject.GetComponent<AHMI.Safety.BlinkingLightAdapter>();
+            if (lightAdapter == null)
+            {
+                lightAdapter = gameObject.AddComponent<AHMI.Safety.BlinkingLightAdapter>();
+            }
+            
+            var lightsField = typeof(AHMI.Safety.BlinkingLightAdapter).GetField("lights", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (lightsField != null)
+            {
+                lightsField.SetValue(lightAdapter, childLights);
+            }
+
+            safetyState.OnSafetyWaitStarted.AddListener(lightAdapter.StartBlinking);
+            safetyState.OnSafetyWaitEnded.AddListener(lightAdapter.StopBlinking);
+        }
+    }
+
+    private AudioClip CreateBeepClip()
+    {
+        int frequency = 44100;
+        float duration = 0.4f; // 400ms alarm tone
+        int sampleCount = (int)(frequency * duration);
+        float[] samples = new float[sampleCount];
+        float waveFrequency = 600f; // 600 Hz pitch warning signal
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            samples[i] = Mathf.Sin(2 * Mathf.PI * waveFrequency * i / frequency);
+        }
+
+        AudioClip clip = AudioClip.Create("SafetyBeep", sampleCount, 1, frequency, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
+    private void PulsateHeadlights()
+    {
+        float pulse = Mathf.PingPong(Time.time * 4f, 1f);
+        float intensity = Mathf.Lerp(0.05f, 0.5f, pulse);
+
+        Transform lightGlass = FindChildRecursive(transform, "lightGlass");
+        if (lightGlass != null)
+        {
+            MeshRenderer renderer = lightGlass.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.material.EnableKeyword("_EMISSION");
+                Color color = renderer.material.color;
+                renderer.material.SetColor("_EmissionColor", new Color(color.r, color.g, color.b) * intensity);
+            }
+        }
+    }
+
+    public bool IsNodeWithinNextSegments(TrafficNode node, int maxNodeCount)
+    {
+        if (currentPath == null || isParked || isReversing) return false;
+
+        int searchLimit = Mathf.Min(pathIndex + maxNodeCount, currentPath.Count);
+        for (int i = pathIndex; i < searchLimit; i++)
+        {
+            if (currentPath[i] == node)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
