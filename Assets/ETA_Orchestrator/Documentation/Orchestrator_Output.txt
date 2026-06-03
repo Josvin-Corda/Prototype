@@ -1,0 +1,30 @@
+
+Ideally the output should be:
+
+1. starting node/starting parking spot
+2. ending node/ ending pickup area
+3. precise route node list (including parking spot and pickup area)
+
+----
+
+When the orchestrator knows the route, it will call:
+
+dynamicRouteBridge.ReceiveRoute(routeNodes, pickupLabel);
+
+Example:
+
+dynamicRouteBridge.ReceiveRoute(generatedRouteNodes, "A");
+
+Where generatedRouteNodes can be:
+
+List<Transform>
+Transform[]
+List<GameObject>
+GameObject[]
+List<RouteEndpoint>
+RouteEndpoint[]
+
+because the orchestrator will be able to convert the route into any of these formats, 
+and the dynamicRouteBridge will be able to convert it into the format it needs for the navigation system. 
+The pickupLabel is a string that can be used to identify the pickup area, 
+and can be used by the navigation system to determine which pickup area to navigate to.

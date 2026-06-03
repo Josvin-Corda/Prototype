@@ -27,8 +27,10 @@ public class ValetSession
     public Transform designatedSpot;
     public Transform pickUpSpot;
     public float stateTimer;
+
     [System.NonSerialized]
     public bool lightReset;
+
     [System.NonSerialized]
     public System.Action arrivalHandler;
 }
@@ -55,7 +57,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     public float pickUpWaitTime = 5f;
 
     [Header("References")]
-    [Tooltip("Drag all your parking spot Transforms here (A1, B1, C1, D1).")]
+    [Tooltip("Drag all your parking spot Transforms here.")]
     public List<Transform> allParkingSpots = new List<Transform>();
 
     [Tooltip("Drag your drop-off spot Transforms here.")]
@@ -64,7 +66,7 @@ public class ValetGuidanceSystem : MonoBehaviour
     [Tooltip("Drag your pick-up spot Transforms here.")]
     public List<Transform> pickUpSpots = new List<Transform>();
 
-    [Tooltip("The exit node (e.g. Node_02 (42)) to send cars to when exiting.")]
+    [Tooltip("The exit node or exit target to send cars to when exiting.")]
     public Transform exitSpot;
 
     [Header("Testing")]
@@ -74,34 +76,63 @@ public class ValetGuidanceSystem : MonoBehaviour
     [Header("Active Sessions")]
     public List<ValetSession> activeSessions = new List<ValetSession>();
 
+    [Header("AHMI ETA Billboard Integration")]
+    [SerializeField] private DynamicRouteBridge dynamicRouteBridge;
+    [SerializeField] private ParkingTrafficProvider parkingTrafficProvider;
+    [SerializeField] private bool enableEtaBillboardIntegration = true;
+
     private Dictionary<string, CarDatabaseEntry> carDatabaseLookup = new Dictionary<string, CarDatabaseEntry>();
+
+    private string[] dummyNames = new string[]
+    {
+        "John Doe", "Jane Smith", "Mario Rossi", "Luigi Bianchi", "Alice Johnson",
+        "Bob Miller", "Emma Watson", "Frank Sinatra", "Grace Hopper", "David Beckham"
+    };
 
     private void Awake()
     {
         activeSessions.Clear();
         LoadCarDatabase();
-        allParkingSpots.RemoveAll(spot => spot == null);
-        dropOffSpots.RemoveAll(spot => spot == null);
-        pickUpSpots.RemoveAll(spot => spot == null);
+
+        if (allParkingSpots != null)
+            allParkingSpots.RemoveAll(spot => spot == null);
+
+        if (dropOffSpots != null)
+            dropOffSpots.RemoveAll(spot => spot == null);
+
+        if (pickUpSpots != null)
+            pickUpSpots.RemoveAll(spot => spot == null);
+    }
+
+    private void Start()
+    {
+        if (testOnStart)
+        {
+            StartCoroutine(TestTriggerRoutine());
+        }
     }
 
     private void LoadCarDatabase()
     {
         TextAsset jsonAsset = Resources.Load<TextAsset>("CarDatabase");
+
         if (jsonAsset != null)
         {
             try
             {
                 CarDatabaseContainer dbContainer = JsonUtility.FromJson<CarDatabaseContainer>(jsonAsset.text);
+
                 if (dbContainer != null && dbContainer.cars != null)
                 {
                     foreach (var car in dbContainer.cars)
                     {
-                        if (!string.IsNullOrEmpty(car.plateNumber) && !carDatabaseLookup.ContainsKey(car.plateNumber))
+                        if (!string.IsNullOrEmpty(car.plateNumber) &&
+                            !carDatabaseLookup.ContainsKey(car.plateNumber))
                         {
                             carDatabaseLookup.Add(car.plateNumber, car);
                         }
                     }
+
                     Debug.Log($"[Valet System] Successfully loaded {carDatabaseLookup.Count} cars from database.");
                 }
             }
@@ -116,26 +147,15 @@ public class ValetGuidanceSystem : MonoBehaviour
         }
     }
 
-    private string[] dummyNames = new string[] {
-        "John Doe", "Jane Smith", "Mario Rossi", "Luigi Bianchi", "Alice Johnson",
-        "Bob Miller", "Emma Watson", "Frank Sinatra", "Grace Hopper", "David Beckham"
-    };
-
-    private void Start()
-    {
-        if (testOnStart)
-        {
-            StartCoroutine(TestTriggerRoutine());
-        }
-    }
-
     private IEnumerator TestTriggerRoutine()
     {
-        yield return new WaitForSeconds(1.5f); // wait for network to initialize
+        yield return new WaitForSeconds(1.5f);
+
         if (testCar == null)
         {
             testCar = Object.FindAnyObjectByType<SmartCarNavigator>();
         }
+
         if (testCar != null)
         {
             Debug.Log($"[Valet System] Test mode: Registering {testCar.name} on startup.");
@@ -152,10 +172,17 @@ public class ValetGuidanceSystem : MonoBehaviour
     /// </summary>
     public void RegisterCar(SmartCarNavigator car)
     {
-        // Avoid duplicate registration
-        if (activeSessions.Exists(s => s.car == car)) return;
+        if (car == null)
+        {
+            Debug.LogWarning("[Valet System] RegisterCar called with null car.");
+            return;
+        }
 
-        // 1. Get a free parking spot
+        // Avoid duplicate registration.
+        if (activeSessions.Exists(s => s.car == car))
+            return;
+
+        // 1. Get a free parking spot.
         Transform parkingSpot = GetFreeParkingSpot();
         if (parkingSpot == null)
         {
@@ -163,7 +190,7 @@ public class ValetGuidanceSystem : MonoBehaviour
             return;
         }
 
-        // 2. Get a free drop-off spot
+        // 2. Get a free drop-off spot.
         Transform dropSpot = GetFreeDropOffSpot();
         if (dropSpot == null)
         {
@@ -171,16 +198,18 @@ public class ValetGuidanceSystem : MonoBehaviour
             return;
         }
 
-        // 3. Create session & assign details
-        string finalPlate = "";
-        string finalOwner = "";
-        string finalContact = "";
+        // 3. Assign plate and owner details.
+        string finalPlate;
+        string finalOwner;
+        string finalContact;
 
-        if (!string.IsNullOrEmpty(car.plateNumber) && carDatabaseLookup.TryGetValue(car.plateNumber, out var dbEntry))
+        if (!string.IsNullOrEmpty(car.plateNumber) &&
+            carDatabaseLookup.TryGetValue(car.plateNumber, out var dbEntry))
         {
             finalPlate = dbEntry.plateNumber;
             finalOwner = dbEntry.ownerName;
             finalContact = dbEntry.contact;
+
             Debug.Log($"[Valet System] Database match found for plate: {finalPlate}");
         }
         else
@@ -188,6 +217,7 @@ public class ValetGuidanceSystem : MonoBehaviour
             finalPlate = !string.IsNullOrEmpty(car.plateNumber) ? car.plateNumber : GeneratePlate();
             finalOwner = dummyNames[Random.Range(0, dummyNames.Length)];
             finalContact = GenerateContact();
+
             Debug.Log($"[Valet System] No database match for plate: '{car.plateNumber}'. Generated random owner details.");
         }
 
@@ -200,7 +230,9 @@ public class ValetGuidanceSystem : MonoBehaviour
             contact = finalContact,
             designatedSpot = parkingSpot,
             dropOffSpot = dropSpot,
-            stateTimer = 0f
+            pickUpSpot = null,
+            stateTimer = 0f,
+            lightReset = false
         };
 
         Debug.Log($"<color=cyan>[Valet System] Registered Car: {car.name}</color>\n" +
@@ -209,9 +241,10 @@ public class ValetGuidanceSystem : MonoBehaviour
                   $"  Drop-Off Spot: {dropSpot.name}\n" +
                   $"  Assigned Park Spot: {parkingSpot.name}");
 
-        // 4. Calculate path to Drop-Off
+        // 4. Calculate path to Drop-Off.
         TrafficNode startNode = TrafficNetwork.Instance.GetClosestNode(car.transform.position);
         List<TrafficNode> path = new List<TrafficNode>();
+
         AngledSpot angledDropSpot = dropSpot.GetComponent<AngledSpot>();
         if (angledDropSpot != null)
         {
@@ -219,8 +252,12 @@ public class ValetGuidanceSystem : MonoBehaviour
             {
                 path = TrafficNetwork.Instance.GetPath(startNode, angledDropSpot.laneNode);
             }
-            if (angledDropSpot.entryNode != null) path.Add(angledDropSpot.entryNode);
-            if (angledDropSpot.spotNode != null) path.Add(angledDropSpot.spotNode);
+
+            if (angledDropSpot.entryNode != null)
+                path.Add(angledDropSpot.entryNode);
+
+            if (angledDropSpot.spotNode != null)
+                path.Add(angledDropSpot.spotNode);
         }
         else
         {
@@ -228,13 +265,21 @@ public class ValetGuidanceSystem : MonoBehaviour
             path = TrafficNetwork.Instance.GetPath(startNode, endNode);
         }
 
-        // 5. Subscribe to arrived event and start moving
+        if (path == null || path.Count == 0)
+        {
+            Debug.LogWarning($"[Valet System] No valid path found to drop-off spot {dropSpot.name}.");
+        }
+
+        // 5. Subscribe to arrival event and start moving.
         System.Action handler = () => OnCarReachedDestination(session);
         session.arrivalHandler = handler;
         car.OnDestinationReached += handler;
         activeSessions.Add(session);
 
-        // Turn the light turquoise to indicate autopark mode (semi-transparent)
+        // Update external traffic data for the ETA system.
+        UpdateTrafficProviderData();
+
+        // Turn the light turquoise to indicate autopark mode.
         car.SetAutoparkLightColor(new Color(0f, 0.9f, 0.9f, 0.12f));
 
         car.AssignRouteAndSpot(path, dropSpot, reverseOnStart: false);
@@ -242,7 +287,7 @@ public class ValetGuidanceSystem : MonoBehaviour
 
     private void Update()
     {
-        // Use a reverse loop because we might remove sessions from the list
+        // Reverse loop because sessions may be removed while iterating.
         for (int i = activeSessions.Count - 1; i >= 0; i--)
         {
             ValetSession session = activeSessions[i];
@@ -252,15 +297,18 @@ public class ValetGuidanceSystem : MonoBehaviour
                 session.state == ValetState.AtPickUp)
             {
                 session.stateTimer -= Time.deltaTime;
-                if (session.stateTimer <= 0)
+
+                if (session.stateTimer <= 0f)
                 {
                     AdvanceSessionState(session);
                 }
             }
             else if (session.state == ValetState.Exiting)
             {
-                // Turn off the turquoise light once the car crosses the exit boundary (X < 2.5f)
-                if (!session.lightReset && session.car != null && session.car.transform.position.x < 2.5f)
+                // Turn off the turquoise light once the car crosses the exit boundary.
+                if (!session.lightReset &&
+                    session.car != null &&
+                    session.car.transform.position.x < 2.5f)
                 {
                     session.lightReset = true;
                     session.car.ResetAutoparkLight();
@@ -271,6 +319,9 @@ public class ValetGuidanceSystem : MonoBehaviour
 
     private void OnCarReachedDestination(ValetSession session)
     {
+        if (session == null || session.car == null)
+            return;
+
         Debug.Log($"[Valet System] {session.car.name} reached destination in state {session.state}");
 
         switch (session.state)
@@ -296,34 +347,39 @@ public class ValetGuidanceSystem : MonoBehaviour
             case ValetState.Exiting:
                 session.state = ValetState.Exited;
                 Debug.Log($"[Valet System] {session.car.name} has exited the parking lot.");
-                
-                // Turn off the light upon crossing/reaching the exit
+
                 session.car.ResetAutoparkLight();
 
-                // Clean up events
                 if (session.arrivalHandler != null)
                 {
                     session.car.OnDestinationReached -= session.arrivalHandler;
                     session.arrivalHandler = null;
                 }
-                
-                // Destroy spawned vehicle to free memory
+
                 Destroy(session.car.gameObject);
-                
                 activeSessions.Remove(session);
+
+                UpdateTrafficProviderData();
                 break;
         }
     }
 
     private void AdvanceSessionState(ValetSession session)
     {
+        if (session == null || session.car == null)
+            return;
+
         if (session.state == ValetState.AtDropOff)
         {
             session.state = ValetState.MovingToPark;
             Debug.Log($"[Valet System] Passengers got down. Driving {session.car.name} to assigned spot {session.designatedSpot.name}.");
 
             TrafficNode startNode;
-            AngledSpot angledDropSpot = session.dropOffSpot != null ? session.dropOffSpot.GetComponent<AngledSpot>() : null;
+
+            AngledSpot angledDropSpot = session.dropOffSpot != null
+                ? session.dropOffSpot.GetComponent<AngledSpot>()
+                : null;
+
             if (angledDropSpot != null && angledDropSpot.laneNode != null)
             {
                 startNode = angledDropSpot.laneNode;
@@ -336,17 +392,35 @@ public class ValetGuidanceSystem : MonoBehaviour
             TrafficNode endNode = TrafficNetwork.Instance.GetClosestNode(session.designatedSpot.position);
             List<TrafficNode> path = TrafficNetwork.Instance.GetPath(startNode, endNode);
 
-            bool reverse = session.dropOffSpot != null && session.dropOffSpot.GetComponent<AngledSpot>() != null;
+            if (path == null || path.Count == 0)
+            {
+                Debug.LogWarning($"[Valet System] No valid path found from drop-off to parking spot {session.designatedSpot.name}.");
+            }
+
+            bool reverse = session.dropOffSpot != null &&
+                           session.dropOffSpot.GetComponent<AngledSpot>() != null;
+
             session.car.AssignRouteAndSpot(path, session.designatedSpot, reverseOnStart: reverse);
         }
         else if (session.state == ValetState.Parked)
         {
             session.state = ValetState.MovingToPickUp;
             session.pickUpSpot = GetFreePickUpSpot();
+
+            if (session.pickUpSpot == null)
+            {
+                Debug.LogWarning($"[Valet System] No free pick-up spot available for {session.car.name}.");
+                return;
+            }
+
             Debug.Log($"[Valet System] Recall triggered! Driving {session.car.name} from {session.designatedSpot.name} to pick-up spot {session.pickUpSpot.name}.");
 
             TrafficNode startNode;
-            AngledSpot angledDesignatedSpot = session.designatedSpot != null ? session.designatedSpot.GetComponent<AngledSpot>() : null;
+
+            AngledSpot angledDesignatedSpot = session.designatedSpot != null
+                ? session.designatedSpot.GetComponent<AngledSpot>()
+                : null;
+
             if (angledDesignatedSpot != null && angledDesignatedSpot.laneNode != null)
             {
                 startNode = angledDesignatedSpot.laneNode;
@@ -357,21 +431,38 @@ public class ValetGuidanceSystem : MonoBehaviour
             }
 
             List<TrafficNode> path = new List<TrafficNode>();
-            AngledSpot angledPickSpot = session.pickUpSpot != null ? session.pickUpSpot.GetComponent<AngledSpot>() : null;
+
+            AngledSpot angledPickSpot = session.pickUpSpot != null
+                ? session.pickUpSpot.GetComponent<AngledSpot>()
+                : null;
+
             if (angledPickSpot != null)
             {
                 if (angledPickSpot.laneNode != null)
                 {
                     path = TrafficNetwork.Instance.GetPath(startNode, angledPickSpot.laneNode);
                 }
-                if (angledPickSpot.entryNode != null) path.Add(angledPickSpot.entryNode);
-                if (angledPickSpot.spotNode != null) path.Add(angledPickSpot.spotNode);
+
+                if (angledPickSpot.entryNode != null)
+                    path.Add(angledPickSpot.entryNode);
+
+                if (angledPickSpot.spotNode != null)
+                    path.Add(angledPickSpot.spotNode);
             }
             else
             {
                 TrafficNode endNode = TrafficNetwork.Instance.GetClosestNode(session.pickUpSpot.position);
                 path = TrafficNetwork.Instance.GetPath(startNode, endNode);
             }
+
+            if (path == null || path.Count == 0)
+            {
+                Debug.LogWarning($"[Valet System] No valid path found from parking spot {session.designatedSpot.name} to pickup spot {session.pickUpSpot.name}.");
+            }
+
+            UpdateTrafficProviderData();
+
+            SendPickupRouteToETABillboard(session, path);
 
             session.car.AssignRouteAndSpot(path, session.pickUpSpot, reverseOnStart: true);
         }
@@ -381,7 +472,11 @@ public class ValetGuidanceSystem : MonoBehaviour
             Debug.Log($"[Valet System] Departure confirmed. Driving {session.car.name} to the exit.");
 
             TrafficNode startNode;
-            AngledSpot angledPickSpot = session.pickUpSpot != null ? session.pickUpSpot.GetComponent<AngledSpot>() : null;
+
+            AngledSpot angledPickSpot = session.pickUpSpot != null
+                ? session.pickUpSpot.GetComponent<AngledSpot>()
+                : null;
+
             if (angledPickSpot != null && angledPickSpot.laneNode != null)
             {
                 startNode = angledPickSpot.laneNode;
@@ -394,27 +489,102 @@ public class ValetGuidanceSystem : MonoBehaviour
             TrafficNode endNode = TrafficNetwork.Instance.GetClosestNode(exitSpot.position);
             List<TrafficNode> path = TrafficNetwork.Instance.GetPath(startNode, endNode);
 
-            bool reverse = session.pickUpSpot != null && session.pickUpSpot.GetComponent<AngledSpot>() != null;
+            if (path == null || path.Count == 0)
+            {
+                Debug.LogWarning($"[Valet System] No valid path found from pickup spot to exit.");
+            }
+
+            bool reverse = session.pickUpSpot != null &&
+                           session.pickUpSpot.GetComponent<AngledSpot>() != null;
+
             session.car.AssignRouteAndSpot(path, exitSpot, reverseOnStart: reverse);
         }
+    }
+
+    private void SendPickupRouteToETABillboard(ValetSession session, List<TrafficNode> path)
+    {
+        if (!enableEtaBillboardIntegration)
+            return;
+
+        if (dynamicRouteBridge == null)
+        {
+            Debug.LogWarning("[Valet System] DynamicRouteBridge reference missing. ETA billboard not updated.");
+            return;
+        }
+
+        if (session == null || session.pickUpSpot == null)
+        {
+            Debug.LogWarning("[Valet System] Missing session or pickup spot. ETA billboard not updated.");
+            return;
+        }
+
+        if (path == null || path.Count < 2)
+        {
+            Debug.LogWarning("[Valet System] Invalid pickup path. ETA billboard not updated.");
+            return;
+        }
+
+        string pickupLabel = GetPickupLabel(session.pickUpSpot);
+
+        dynamicRouteBridge.ReceiveTrafficNodeRoute(path, pickupLabel);
+
+        Debug.Log($"[Valet System] ETA billboard route sent. Pickup={pickupLabel}, Nodes={path.Count}");
+    }
+
+    private string GetPickupLabel(Transform pickupSpot)
+    {
+        if (pickupSpot == null)
+            return "-";
+
+        int index = pickUpSpots.IndexOf(pickupSpot);
+
+        if (index >= 0 && index < 26)
+        {
+            char label = (char)('A' + index);
+            return label.ToString();
+        }
+
+        return pickupSpot.name;
+    }
+
+    private void UpdateTrafficProviderData()
+    {
+        if (parkingTrafficProvider == null)
+            return;
+
+        int totalCarsInSimulation = Mathf.Max(1, allParkingSpots != null ? allParkingSpots.Count : 1);
+        int activeCarsCount = activeSessions != null ? activeSessions.Count : 0;
+
+        parkingTrafficProvider.SetExternalTrafficData(
+            totalCarsInSimulation,
+            activeCarsCount
+        );
     }
 
     private Transform GetFreeParkingSpot()
     {
         foreach (var spot in allParkingSpots)
         {
-            if (spot == null) continue;
+            if (spot == null)
+                continue;
+
             bool isOccupied = false;
+
             foreach (var s in activeSessions)
             {
-                if (s.designatedSpot == spot && s.state != ValetState.Exiting && s.state != ValetState.Exited)
+                if (s.designatedSpot == spot &&
+                    s.state != ValetState.Exiting &&
+                    s.state != ValetState.Exited)
                 {
                     isOccupied = true;
                     break;
                 }
             }
-            if (!isOccupied) return spot;
+
+            if (!isOccupied)
+                return spot;
         }
+
         return null;
     }
 
@@ -422,18 +592,26 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         foreach (var spot in dropOffSpots)
         {
-            if (spot == null) continue;
+            if (spot == null)
+                continue;
+
             bool isOccupied = false;
+
             foreach (var s in activeSessions)
             {
-                if (s.dropOffSpot == spot && (s.state == ValetState.ApproachingDropOff || s.state == ValetState.AtDropOff))
+                if (s.dropOffSpot == spot &&
+                    (s.state == ValetState.ApproachingDropOff ||
+                     s.state == ValetState.AtDropOff))
                 {
                     isOccupied = true;
                     break;
                 }
             }
-            if (!isOccupied) return spot;
+
+            if (!isOccupied)
+                return spot;
         }
+
         return dropOffSpots.Count > 0 ? dropOffSpots[0] : null;
     }
 
@@ -441,18 +619,26 @@ public class ValetGuidanceSystem : MonoBehaviour
     {
         foreach (var spot in pickUpSpots)
         {
-            if (spot == null) continue;
+            if (spot == null)
+                continue;
+
             bool isOccupied = false;
+
             foreach (var s in activeSessions)
             {
-                if (s.pickUpSpot == spot && (s.state == ValetState.MovingToPickUp || s.state == ValetState.AtPickUp))
+                if (s.pickUpSpot == spot &&
+                    (s.state == ValetState.MovingToPickUp ||
+                     s.state == ValetState.AtPickUp))
                 {
                     isOccupied = true;
                     break;
                 }
             }
-            if (!isOccupied) return spot;
+
+            if (!isOccupied)
+                return spot;
         }
+
         return pickUpSpots.Count > 0 ? pickUpSpots[0] : null;
     }
 
@@ -463,6 +649,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         int num = Random.Range(100, 999);
         char c3 = (char)Random.Range('A', 'Z' + 1);
         char c4 = (char)Random.Range('A', 'Z' + 1);
+
         return $"{c1}{c2}-{num}-{c3}{c4}";
     }
 
