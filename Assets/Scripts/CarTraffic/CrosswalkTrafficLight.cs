@@ -128,9 +128,46 @@ public class CrosswalkTrafficLight : MonoBehaviour
         UpdateVisuals();
     }
 
+    private void UpdateActiveCrossingCars()
+    {
+        if (currentState != SignalState.CarApproaching && currentState != SignalState.CarCrossing)
+        {
+            return;
+        }
+
+        SmartCarNavigator[] allCars = Object.FindObjectsByType<SmartCarNavigator>(FindObjectsSortMode.None);
+        foreach (var car in allCars)
+        {
+            if (car == null || car.IsParked) continue;
+            if (activeCrossingCars.Contains(car)) continue;
+
+            if ((criticalNode1 != null && car.IsNodeWithinNextSegments(criticalNode1, criticalZoneNodeThreshold))
+             || (criticalNode2 != null && car.IsNodeWithinNextSegments(criticalNode2, criticalZoneNodeThreshold)))
+            {
+                activeCrossingCars.Add(car);
+                Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Dynamically added car '{car.name}' to active crossing list.");
+            }
+        }
+    }
+
     private void Update()
     {
         npcCurrentlyCrossing = IsNPCInsideCrosswalk();
+        UpdateActiveCrossingCars();
+
+        // Safety override: if an NPC is currently crossing, hold all active cars
+        if (npcCurrentlyCrossing)
+        {
+            HoldCarsAtStopLine();
+        }
+        else
+        {
+            // If no NPC is crossing, release cars from stopline (unless in CarApproaching state where state machine decides)
+            if (currentState != SignalState.CarApproaching)
+            {
+                ReleaseCarsFromStopLine();
+            }
+        }
 
         switch (currentState)
         {
@@ -248,10 +285,21 @@ public class CrosswalkTrafficLight : MonoBehaviour
             if (car == null || car.IsParked) continue;
             if (heldCars.Contains(car)) continue; // already held
 
-            // Only consider cars that are actually heading for this crosswalk
+            // A car is relevant if it is heading towards the crosswalk node-path, OR is near and heading towards the crosswalk center
             bool isApproaching = (criticalNode1 != null && car.IsNodeWithinNextSegments(criticalNode1, criticalZoneNodeThreshold))
                               || (criticalNode2 != null && car.IsNodeWithinNextSegments(criticalNode2, criticalZoneNodeThreshold));
-            if (!isApproaching) continue;
+
+            float dx = Mathf.Abs(car.transform.position.x - crosswalkCentreX);
+            Vector3 toCrosswalk = new Vector3(crosswalkCentreX, car.transform.position.y, crosswalkCentreZ) - car.transform.position;
+            bool headingTowards = true;
+            if (toCrosswalk.sqrMagnitude > 0.01f)
+            {
+                headingTowards = Vector3.Dot(car.transform.forward, toCrosswalk.normalized) > -0.2f;
+            }
+
+            bool isNearCrosswalk = dx <= (crosswalkHalfWidth + 3f) && headingTowards;
+
+            if (!isApproaching && !isNearCrosswalk) continue;
 
             // Check distance to each stop line — only brake once the car is close
             float distToLine1 = stopLine1 != null
@@ -266,13 +314,13 @@ public class CrosswalkTrafficLight : MonoBehaviour
 
             float nearest = Mathf.Min(distToLine1, distToLine2);
 
-            if (nearest <= stopLineHaltDistance)
+            // Halt if close to stop line, OR if already past the stop line but near/on the crosswalk
+            if (nearest <= stopLineHaltDistance || isNearCrosswalk)
             {
                 car.IsCrosswalkStopped = true;
                 heldCars.Add(car);
-                Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Stopping car '{car.name}' at stop line ({nearest:F1}m away) — NPC crossing.");
+                Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Stopping car '{car.name}' (distToLine: {nearest:F1}m, distToCentre: {dx:F1}m) — NPC crossing.");
             }
-            // else: car is still far away, let it drive closer naturally
         }
     }
 
@@ -351,8 +399,27 @@ public class CrosswalkTrafficLight : MonoBehaviour
             if (car == null) continue;
             if (car.IsParked) continue; // it parked — definitely done
             float dx = Mathf.Abs(car.transform.position.x - crosswalkCentreX);
-            if (dx <= crosswalkHalfWidth + 3f)
+            
+            // If the car is physically on/in the crosswalk, it is definitely near
+            if (dx <= crosswalkHalfWidth)
+            {
                 return true;
+            }
+
+            // If it is in the buffer zone (within 3m), it is only near if it is heading towards the crosswalk
+            if (dx <= crosswalkHalfWidth + 3f)
+            {
+                Vector3 toCrosswalk = new Vector3(crosswalkCentreX, car.transform.position.y, crosswalkCentreZ) - car.transform.position;
+                bool headingTowards = true;
+                if (toCrosswalk.sqrMagnitude > 0.01f)
+                {
+                    headingTowards = Vector3.Dot(car.transform.forward, toCrosswalk.normalized) > -0.2f;
+                }
+                if (headingTowards)
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
