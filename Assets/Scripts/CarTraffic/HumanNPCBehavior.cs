@@ -587,6 +587,11 @@ public class HumanNPCBehavior : MonoBehaviour
             bool inZone = pos.x >= minX && pos.x <= maxX && pos.z >= minZ && pos.z <= maxZ;
             if (!inZone) continue;
 
+            // If already inside the crosswalk proper, let the NPC finish — don't stop mid-crossing
+            bool alreadyCrossing = pos.x >= (centreX - halfWidth) && pos.x <= (centreX + halfWidth)
+                                && pos.z >= (centreZ - halfDepth) && pos.z <= (centreZ + halfDepth);
+            if (alreadyCrossing) continue;
+
             // Is the NPC heading towards (or across) the crosswalk centre?
             Vector3 toCentre = new Vector3(centreX, pos.y, centreZ) - pos;
             Vector3 toDest   = agent.destination - pos;
