@@ -52,6 +52,9 @@ public class NPCCarSpawner : MonoBehaviour
     private int detectedAgentTypeID = 0;
     private bool hasDetectedAgentType = false;
 
+    [HideInInspector]
+    public bool isSpawningPaused = false;
+
     private void Start()
     {
         if (valetSystem == null)
@@ -100,11 +103,14 @@ public class NPCCarSpawner : MonoBehaviour
 
         while (true)
         {
-            // Only spawn if under the limit
-            int activeCount = valetSystem.activeSessions.Count;
-            if (activeCount < maxNPCCars)
+            if (!isSpawningPaused)
             {
-                SpawnCar();
+                // Only spawn if under the limit
+                int activeCount = valetSystem.activeSessions.Count;
+                if (activeCount < maxNPCCars)
+                {
+                    SpawnCar();
+                }
             }
 
             yield return new WaitForSeconds(spawnInterval);
@@ -143,8 +149,12 @@ public class NPCCarSpawner : MonoBehaviour
             Debug.LogWarning($"[NPCCarSpawner] Could not find NavMesh close to spawn position {pos} for agentType {filter.agentTypeID}!");
         }
 
-        // Instantiate the car directly at the valid NavMesh position
+        // Temporarily deactivate prefab to prevent NavMeshAgent awake binding error
+        bool wasActive = prefab.activeSelf;
+        prefab.SetActive(false);
         GameObject carObj = Instantiate(prefab, spawnPos, rot);
+        prefab.SetActive(wasActive);
+
         carObj.transform.localScale = Vector3.one * carScale;
         spawnedCount++;
         carObj.name = $"NPC_{prefab.name}_{spawnedCount}";
@@ -169,7 +179,8 @@ public class NPCCarSpawner : MonoBehaviour
         // Assign a random plate number (the valet system will generate owner details)
         navigator.plateNumber = GenerateRandomPlate();
 
-        // Warp the agent onto the NavMesh
+        // Warp the agent onto the NavMesh (activate first, then warp)
+        carObj.SetActive(true);
         if (NavMesh.SamplePosition(spawnPos, out hit, 10f, filter))
         {
             Vector3 warpPos = new Vector3(hit.position.x, hit.position.y + agent.baseOffset, hit.position.z);

@@ -30,6 +30,7 @@ public class ValetSession
     public int numPassengers;
     public int passengersPendingBoarding;
     public float returnWaitTime;
+    public bool isPlayerSession;
     [System.NonSerialized]
     public bool lightReset;
     [System.NonSerialized]
@@ -265,10 +266,13 @@ public class ValetGuidanceSystem : MonoBehaviour
 
             if (session.state == ValetState.AtDropOff)
             {
-                session.stateTimer -= Time.deltaTime;
-                if (session.stateTimer <= 0)
+                if (!session.isPlayerSession)
                 {
-                    AdvanceSessionState(session);
+                    session.stateTimer -= Time.deltaTime;
+                    if (session.stateTimer <= 0)
+                    {
+                        AdvanceSessionState(session);
+                    }
                 }
             }
             else if (session.state == ValetState.Exiting)
@@ -320,6 +324,25 @@ public class ValetGuidanceSystem : MonoBehaviour
                 {
                     session.car.OnDestinationReached -= session.arrivalHandler;
                     session.arrivalHandler = null;
+                }
+
+                // If this is the player's car, unparent the VR player before destroying the vehicle
+                if (session.isPlayerSession)
+                {
+                    GameObject xrOriginObj = GameObject.Find("XR Origin (XR Rig)");
+                    if (xrOriginObj != null)
+                    {
+                        xrOriginObj.transform.SetParent(null);
+                        xrOriginObj.transform.position = new Vector3(-14.0f, 0.12f, -17.37f); // starting position
+                        xrOriginObj.transform.rotation = Quaternion.identity;
+
+                        CharacterController cc = xrOriginObj.GetComponent<CharacterController>();
+                        if (cc != null)
+                        {
+                            cc.enabled = true;
+                        }
+                        Debug.Log("[Valet System] Safely unparented and reset XR Origin position before destroying player car.");
+                    }
                 }
                 
                 // Destroy spawned vehicle to free memory

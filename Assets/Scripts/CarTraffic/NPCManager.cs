@@ -91,6 +91,12 @@ public class NPCManager : MonoBehaviour
             session = valetSystem.activeSessions.Find(s => s.car == car);
         }
 
+        if (session != null && session.isPlayerSession)
+        {
+            Debug.Log($"[NPCManager] Skipping NPC passenger spawn for player's car '{car.name}'.");
+            return;
+        }
+
         int passengersToSpawn = 1;
         if (session != null)
         {
