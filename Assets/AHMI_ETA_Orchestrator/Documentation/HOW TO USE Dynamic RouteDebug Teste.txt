@@ -1,0 +1,53 @@
+HOW TO USE Dynamic RouteDebug Tester
+Select:
+
+AHMI_DynamicRouteSystem
+
+Add:
+
+Add Component → DynamicRouteDebugTester
+
+Connect / Assign:
+
+Dynamic Route Bridge → AHMI_DynamicRouteSystem
+
+In the Test Route Nodes field, temporarily insert some real route nodes:
+
+Element 0 → node near the car
+
+Element 1 → intermediate node
+
+Element 2 → pickup node
+
+Set:
+
+Test Pickup Label: A
+
+Send Route Key: R
+
+---
+
+TEST
+
+Press Play.
+
+Then press: R
+
+Expected result on the billboard:
+
+Pickup A
+
+estimated time
+
+Vehicle returning
+
+---
+
+Important Note
+
+This script is for testing only.
+When we connect the real random orchestrator, you will be able to:
+
+disable it
+remove it
+keep it purely as a debug tool
