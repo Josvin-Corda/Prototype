@@ -3215,6 +3215,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6232745470614056090, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 1257616237}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -13839,6 +13843,19 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1234439633}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!134 &1257616237
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &1259924976
 GameObject:
   m_ObjectHideFlags: 0
@@ -15623,6 +15640,14 @@ PrefabInstance:
     - target: {fileID: 2615957057733089487, guid: bf13778b1b2246149a3714397e157b1c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 42.462997
+      objectReference: {fileID: 0}
+    - target: {fileID: 2843533960641875990, guid: bf13778b1b2246149a3714397e157b1c, type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 1871386870}
+    - target: {fileID: 2843533960641875990, guid: bf13778b1b2246149a3714397e157b1c, type: 3}
+      propertyPath: m_StepOffset
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 9007358916820816211, guid: bf13778b1b2246149a3714397e157b1c, type: 3}
       propertyPath: m_Name
@@ -21129,6 +21154,19 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1870002793}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!134 &1871386870
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!114 &1883971766
 MonoBehaviour:
   m_ObjectHideFlags: 0
