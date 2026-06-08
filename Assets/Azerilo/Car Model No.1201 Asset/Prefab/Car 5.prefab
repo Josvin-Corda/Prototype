@@ -3369,7 +3369,7 @@ Transform:
   - {fileID: 4054367012075098}
   - {fileID: 4379451480401104}
   - {fileID: 4474322304717682}
-  - {fileID: 2570570006186989570}
+  - {fileID: 3980571567611169028}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1791251313518316
@@ -4181,6 +4181,18 @@ PrefabInstance:
       propertyPath: detectableLayers.m_Bits
       value: 64
       objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.52
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.33
+      objectReference: {fileID: 0}
     - target: {fileID: 2910055859687436418, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
       propertyPath: m_Name
       value: AHMI_SafetyInteractionSystem
@@ -4190,8 +4202,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
---- !u!4 &2570570006186989570 stripped
+--- !u!4 &3980571567611169028 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 346812615887984939, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
   m_PrefabInstance: {fileID: 2845254555643150633}
   m_PrefabAsset: {fileID: 0}

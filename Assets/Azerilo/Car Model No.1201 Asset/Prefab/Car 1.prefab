@@ -3278,7 +3278,7 @@ Transform:
   - {fileID: 4910949945621414}
   - {fileID: 4300469993718988}
   - {fileID: 4981666998271360}
-  - {fileID: 2951877845909073406}
+  - {fileID: 4352313767832730872}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1708700505944424
@@ -4181,6 +4181,18 @@ PrefabInstance:
       propertyPath: detectableLayers.m_Bits
       value: 64
       objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.52
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.33
+      objectReference: {fileID: 0}
     - target: {fileID: 2910055859687436418, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
       propertyPath: m_Name
       value: AHMI_SafetyInteractionSystem
@@ -4192,7 +4204,7 @@ PrefabInstance:
     - target: {fileID: 3007738751651394912, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
       propertyPath: OnSafetyWaitStarted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 307816099944547415}
+      objectReference: {fileID: 0}
     - target: {fileID: 3007738751651394912, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
       propertyPath: OnSafetyWaitStarted.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
@@ -4202,13 +4214,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
---- !u!1 &307816099944547415 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2910055859687436418, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
-  m_PrefabInstance: {fileID: 3181526497859073237}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &2951877845909073406 stripped
+--- !u!4 &4352313767832730872 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 346812615887984939, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
   m_PrefabInstance: {fileID: 3181526497859073237}
   m_PrefabAsset: {fileID: 0}
