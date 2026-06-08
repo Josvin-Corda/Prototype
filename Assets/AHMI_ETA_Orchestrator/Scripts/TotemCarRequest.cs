@@ -31,6 +31,11 @@ public class TotemCarRequest : MonoBehaviour
     {
         if (carETAOrchestrator == null)
         {
+            carETAOrchestrator = Object.FindAnyObjectByType<CarETAOrchestrator>();
+        }
+
+        if (carETAOrchestrator == null)
+        {
             Debug.LogError("CarETAOrchestrator reference missing.");
             return;
         }
