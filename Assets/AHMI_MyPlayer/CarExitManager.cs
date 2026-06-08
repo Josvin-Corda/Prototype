@@ -15,7 +15,7 @@ public class CarExitManager : MonoBehaviour
     public void ExitCar()
     {
         // Controllo di sicurezza per evitare errori se ti dimentichi di assegnare qualcosa nell'Inspector
-        if (xrOrigin == null || arrivalPoint == null || avatar == null)
+        if (xrOrigin == null || arrivalPoint == null)
         {
             Debug.LogError("CarExitManager: Mancano dei riferimenti nell'Inspector!");
             return;
@@ -28,16 +28,22 @@ public class CarExitManager : MonoBehaviour
         xrOrigin.transform.position = arrivalPoint.position;
         xrOrigin.transform.rotation = arrivalPoint.rotation;
 
-        // 3. Rendi l'avatar figlio dell'XR Origin in modo che si muova con lui
-        avatar.transform.SetParent(xrOrigin.transform);
+        if (avatar != null)
+        {
+            // 3. Rendi l'avatar figlio dell'XR Origin in modo che si muova con lui
+            avatar.transform.SetParent(xrOrigin.transform);
 
-        // 4. Allinea l'avatar al centro dell'XR Origin (localmente a coordinate 0,0,0)
-        avatar.transform.localPosition = Vector3.zero;
-        avatar.transform.localRotation = Quaternion.identity;
+            // 4. Allinea l'avatar al centro dell'XR Origin (localmente a coordinate 0,0,0)
+            avatar.transform.localPosition = Vector3.zero;
+            avatar.transform.localRotation = Quaternion.identity;
 
-        // 5. Attiva l'avatar nella scena
-        avatar.SetActive(true);
-
-        Debug.Log("Giocatore sceso dall'auto con successo! Avatar attivato.");
+            // 5. Attiva l'avatar nella scena
+            avatar.SetActive(true);
+            Debug.Log("Giocatore sceso dall'auto con successo! Avatar attivato.");
+        }
+        else
+        {
+            Debug.Log("Giocatore sceso dall'auto con successo! (Nessun avatar da attivare)");
+        }
     }
 }

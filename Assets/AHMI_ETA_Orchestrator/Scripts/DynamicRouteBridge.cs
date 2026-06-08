@@ -9,6 +9,11 @@ public class DynamicRouteBridge : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool logDebugInfo = true;
 
+    public void SetCarETAOrchestrator(CarETAOrchestrator orchestrator)
+    {
+        carETAOrchestrator = orchestrator;
+    }
+
     public void ReceiveRoute(List<Transform> routeNodes, string pickupLabel)
     {
         if (!ValidateTransformRoute(routeNodes))

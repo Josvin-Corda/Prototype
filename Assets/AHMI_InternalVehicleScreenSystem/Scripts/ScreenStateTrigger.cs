@@ -66,7 +66,8 @@ namespace AHMI.InternalVehicleScreen
         {
             if (requiredRootObject == null)
             {
-                return true;
+                // If no specific object is required, allow any vehicle containing a SmartCarNavigator component
+                return other.GetComponentInParent<SmartCarNavigator>() != null;
             }
 
             Transform current = other.transform;

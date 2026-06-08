@@ -603,6 +603,15 @@ public class ValetGuidanceSystem : MonoBehaviour
 
         string pickupLabel = GetPickupLabel(session.pickUpSpot);
 
+        if (session.car != null)
+        {
+            CarETAOrchestrator orchestrator = session.car.GetComponent<CarETAOrchestrator>();
+            if (orchestrator != null)
+            {
+                dynamicRouteBridge.SetCarETAOrchestrator(orchestrator);
+            }
+        }
+
         dynamicRouteBridge.ReceiveTrafficNodeRoute(path, pickupLabel);
 
         Debug.Log($"[Valet System] ETA billboard route sent. Pickup={pickupLabel}, Nodes={path.Count}");

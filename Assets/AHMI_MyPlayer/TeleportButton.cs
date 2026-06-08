@@ -15,7 +15,7 @@ public class TeleportButton : MonoBehaviour
     /// </summary>
     public void TrasportaGiocatore()
     {
-        if (xrOrigin == null || targetLocation == null || avatar == null)
+        if (xrOrigin == null || targetLocation == null)
         {
             Debug.LogError("TeleportButton: Mancano dei riferimenti nell'Inspector!");
             return;
@@ -25,12 +25,18 @@ public class TeleportButton : MonoBehaviour
         xrOrigin.transform.position = targetLocation.position;
         xrOrigin.transform.rotation = targetLocation.rotation;
 
-        avatar.transform.SetParent(xrOrigin.transform);
-        avatar.transform.localPosition = Vector3.zero;
-        avatar.transform.localRotation = Quaternion.identity;
-        avatar.SetActive(true);
-
-        Debug.Log("Uscito dall'auto! Avatar attivato.");
+        if (avatar != null)
+        {
+            avatar.transform.SetParent(xrOrigin.transform);
+            avatar.transform.localPosition = Vector3.zero;
+            avatar.transform.localRotation = Quaternion.identity;
+            avatar.SetActive(true);
+            Debug.Log("Uscito dall'auto! Avatar attivato.");
+        }
+        else
+        {
+            Debug.Log("Uscito dall'auto! (Nessun avatar da attivare)");
+        }
     }
 
     /// <summary>
@@ -38,17 +44,19 @@ public class TeleportButton : MonoBehaviour
     /// </summary>
     public void RientraInMacchina()
     {
-        if (xrOrigin == null || targetLocation == null || avatar == null || vehicle == null)
+        if (xrOrigin == null || targetLocation == null || vehicle == null)
         {
             Debug.LogError("TeleportButton: Mancano dei riferimenti per il rientro nell'Inspector!");
             return;
         }
 
-        // 1. Sgancia l'avatar dallo XR Rig e rimettilo libero nella radice della scena
-        avatar.transform.SetParent(null);
-
-        // 2. Disattiva l'avatar
-        avatar.SetActive(false);
+        if (avatar != null)
+        {
+            // 1. Sgancia l'avatar dallo XR Rig e rimettilo libero nella radice della scena
+            avatar.transform.SetParent(null);
+            // 2. Disattiva l'avatar
+            avatar.SetActive(false);
+        }
 
         // 3. Rendi di nuovo lo XR Rig figlio della macchina
         xrOrigin.transform.SetParent(vehicle);
@@ -57,6 +65,6 @@ public class TeleportButton : MonoBehaviour
         xrOrigin.transform.position = targetLocation.position;
         xrOrigin.transform.rotation = targetLocation.rotation;
 
-        Debug.Log("Rientrato in macchina! Avatar disattivato e gerarchie ripristinate.");
+        Debug.Log("Rientrato in macchina! Gerarchie ripristinate.");
     }
 }

@@ -14,6 +14,18 @@ namespace AHMI.Safety
         [TextArea]
         [SerializeField] private string normalMessage = "Autonomous driving active";
 
+        private void Start()
+        {
+            if (waitingPanel == null)
+            {
+                waitingPanel = GameObject.Find("AHMI_InternalScreenSystem/tesla/HUD/HazardOverlay");
+                if (waitingPanel == null)
+                {
+                    waitingPanel = GameObject.Find("HazardOverlay");
+                }
+            }
+        }
+
         public void ShowWaitingMessage()
         {
             if (waitingPanel != null)
