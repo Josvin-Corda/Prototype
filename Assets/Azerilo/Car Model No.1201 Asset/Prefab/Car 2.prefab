@@ -4181,6 +4181,18 @@ PrefabInstance:
       propertyPath: detectableLayers.m_Bits
       value: 64
       objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.52
+      objectReference: {fileID: 0}
+    - target: {fileID: 1171370423864510509, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.33
+      objectReference: {fileID: 0}
     - target: {fileID: 2910055859687436418, guid: 2520642a39131e840804bdddb7d914f9, type: 3}
       propertyPath: m_Name
       value: AHMI_SafetyInteractionSystem
