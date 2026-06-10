@@ -227,49 +227,5 @@ public class NPCCarSpawner : MonoBehaviour
         return $"{c1}{c2}-{num}-{c3}{c4}";
     }
 
-    private void OnGUI()
-    {
-        // Design a sleek dark-themed GUI box in the top-left corner
-        GUI.backgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.85f);
-        GUILayout.BeginArea(new Rect(10f, 10f, 280f, 220f), GUI.skin.box);
-        GUILayout.BeginVertical();
 
-        // Title
-        GUIStyle titleStyle = new GUIStyle(GUI.skin.label);
-        titleStyle.alignment = TextAnchor.MiddleCenter;
-        titleStyle.fontStyle = FontStyle.Bold;
-        titleStyle.fontSize = 14;
-        titleStyle.normal.textColor = Color.cyan;
-        GUILayout.Label("Valet Spawner Controls", titleStyle);
-        GUILayout.Space(5f);
-
-        // Stats readout
-        int activeCount = valetSystem != null ? valetSystem.activeSessions.Count : 0;
-        GUILayout.Label($"Active Cars: {activeCount} / {maxNPCCars}", GUI.skin.label);
-        GUILayout.Space(5f);
-
-        // Max NPC Cars Slider
-        GUILayout.Label($"Max NPC Cars: {maxNPCCars}", GUI.skin.label);
-        maxNPCCars = Mathf.RoundToInt(GUILayout.HorizontalSlider(maxNPCCars, 1f, 20f));
-        GUILayout.Space(5f);
-
-        // Spawn Interval Slider
-        GUILayout.Label($"Spawn Interval: {spawnInterval:F1} seconds", GUI.skin.label);
-        spawnInterval = GUILayout.HorizontalSlider(spawnInterval, 1f, 60f);
-        GUILayout.Space(10f);
-
-        // Manual Spawn button
-        GUI.backgroundColor = Color.cyan;
-        if (GUILayout.Button("Force Spawn Car Now", GUILayout.Height(30f)))
-        {
-            if (valetSystem != null)
-            {
-                SpawnCar();
-            }
-        }
-        GUI.backgroundColor = Color.white;
-
-        GUILayout.EndVertical();
-        GUILayout.EndArea();
-    }
 }
