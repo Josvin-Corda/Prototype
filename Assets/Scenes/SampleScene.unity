@@ -2936,6 +2936,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 247406990}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &243816901
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 243816903}
+  - component: {fileID: 243816902}
+  m_Layer: 0
+  m_Name: SimulationControlManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &243816902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 243816901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8ee77ccc87efa64ab76b5764be0d2ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VRSimulationController
+  uiCanvasPrefab: {fileID: 6647244092903842149, guid: df75c1223a57b5e4a886bec02d8c34ce, type: 3}
+  toggleUIBinding: <XRController>{LeftHand}/primaryButton
+  toggleUIKeyboardBinding: <Keyboard>/u
+  spawner: {fileID: 1699162813}
+  playerProgression: {fileID: 1273814942}
+  valetSystem: {fileID: 1699162812}
+--- !u!4 &243816903
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 243816901}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &247406989
 GameObject:
   m_ObjectHideFlags: 0
@@ -22072,56 +22122,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TrafficNode
   nextNodes:
   - {fileID: 615526807}
---- !u!1 &2016339823
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2016339825}
-  - component: {fileID: 2016339824}
-  m_Layer: 0
-  m_Name: SimulationControlManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2016339824
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2016339823}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8ee77ccc87efa64ab76b5764be0d2ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::VRSimulationController
-  uiCanvasPrefab: {fileID: 6647244092903842149, guid: df75c1223a57b5e4a886bec02d8c34ce, type: 3}
-  toggleUIBinding: <XRController>{LeftHand}/primaryButton
-  toggleUIKeyboardBinding: <Keyboard>/u
-  spawner: {fileID: 1699162813}
-  playerProgression: {fileID: 1273814942}
-  valetSystem: {fileID: 1699162812}
---- !u!4 &2016339825
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2016339823}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2023157347
 GameObject:
   m_ObjectHideFlags: 0
@@ -370574,4 +370574,4 @@ SceneRoots:
   - {fileID: 1273814943}
   - {fileID: 410742269}
   - {fileID: 778146677}
-  - {fileID: 2016339825}
+  - {fileID: 243816903}

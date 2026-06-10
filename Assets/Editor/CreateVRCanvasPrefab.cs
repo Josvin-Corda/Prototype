@@ -46,134 +46,54 @@ public class CreateVRCanvasPrefab
         Image bgImg = bgObj.AddComponent<Image>();
         bgImg.sprite = bgSprite;
         bgImg.type = Image.Type.Simple;
-        bgImg.color = Color.white; // Keeps original colors of generated texture
+        bgImg.color = Color.white;
         
         // 5. Create Welcome Panel
         GameObject welcomePanelObj = CreateUIElement("WelcomePanel", canvasObj, Vector2.zero, Vector2.one);
         
-        CreateUIText(welcomePanelObj, "WelcomeTitle", "WELCOME TO AUTOMATED VALET SIMULATION", 
-            new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.88f), 32, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+        CreateUIText(welcomePanelObj, "WelcomeTitle", "WELCOME TO VALET SIMULATION", 
+            new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.88f), 36, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
             
         CreateUIText(welcomePanelObj, "WelcomeSubtitle", "SAFETY INTERACTION SYSTEM ONLINE", 
-            new Vector2(0.1f, 0.67f), new Vector2(0.9f, 0.72f), 16, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
+            new Vector2(0.1f, 0.66f), new Vector2(0.9f, 0.71f), 18, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
 
         CreateUIText(welcomePanelObj, "WelcomeBody", 
             "This simulation demonstrates an automated valet parking guidance system\nintegrated with active pedestrian crosswalk safety sensors.\n\n<b>Instructions:</b>\n• Press <b>'X'</b> on your Left Quest Controller to open/close this panel.\n• Point and click using your controller pointer ray to select options.", 
-            new Vector2(0.1f, 0.32f), new Vector2(0.9f, 0.60f), 22, new Color(0.85f, 0.9f, 0.95f), TextAlignmentOptions.Center, FontStyles.Normal);
+            new Vector2(0.1f, 0.35f), new Vector2(0.9f, 0.60f), 22, new Color(0.85f, 0.9f, 0.95f), TextAlignmentOptions.Center, FontStyles.Normal);
         
-        CreateUIButton(welcomePanelObj, "EnterButton", "ENTER SYSTEM", new Vector2(0.38f, 0.16f), new Vector2(0.62f, 0.26f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
+        CreateUIButton(welcomePanelObj, "EnterButton", "ENTER SIMULATION", new Vector2(0.38f, 0.18f), new Vector2(0.62f, 0.28f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
         
         // 6. Create Control Panel
         GameObject controlPanelObj = CreateUIElement("ControlPanel", canvasObj, Vector2.zero, Vector2.one);
         controlPanelObj.SetActive(false); // Inactive on start
         
         // Titles
-        CreateUIText(controlPanelObj, "ControlTitle", "VALET PROGRESSION HUB", 
-            new Vector2(0.2f, 0.84f), new Vector2(0.8f, 0.94f), 32, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+        CreateUIText(controlPanelObj, "ControlTitle", "SIMULATION CONTROL PANEL", 
+            new Vector2(0.1f, 0.75f), new Vector2(0.9f, 0.90f), 36, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
             
-        CreateUIText(controlPanelObj, "ControlSubtitle", "SIMULATION ONLINE", 
-            new Vector2(0.2f, 0.79f), new Vector2(0.8f, 0.84f), 15, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
+        CreateUIText(controlPanelObj, "ControlSubtitle", "SELECT COMMAND TO INTERACT", 
+            new Vector2(0.1f, 0.69f), new Vector2(0.9f, 0.74f), 18, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
             
-        // Left Column (Gears)
-        GameObject leftGears = CreateUIElement("LeftGears", controlPanelObj, new Vector2(0.04f, 0.3f), new Vector2(0.09f, 0.7f));
-        CreateUIText(leftGears, "GearD", "D", new Vector2(0f, 0.75f), new Vector2(1f, 0.95f), 36, new Color(0.25f, 0.25f, 0.25f, 0.5f), TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(leftGears, "GearN", "N", new Vector2(0f, 0.5f), new Vector2(1f, 0.7f), 36, new Color(0.25f, 0.25f, 0.25f, 0.5f), TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(leftGears, "GearR", "R", new Vector2(0f, 0.25f), new Vector2(1f, 0.45f), 36, new Color(0.25f, 0.25f, 0.25f, 0.5f), TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(leftGears, "GearP", "P", new Vector2(0f, 0f), new Vector2(1f, 0.2f), 36, Color.cyan, TextAlignmentOptions.Center, FontStyles.Bold); // P lit on start
-
-        // Right Column (Status)
-        GameObject rightStatus = CreateUIElement("RightStatus", controlPanelObj, new Vector2(0.91f, 0.3f), new Vector2(0.96f, 0.7f));
-        CreateUIText(rightStatus, "BrakeText", "(P)", new Vector2(0f, 0.75f), new Vector2(1f, 0.95f), 28, Color.red, TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(rightStatus, "BatteryText", "🔋", new Vector2(0f, 0.45f), new Vector2(1f, 0.65f), 28, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
-        CreateUIText(rightStatus, "TempText", "🌡", new Vector2(0f, 0.15f), new Vector2(1f, 0.35f), 28, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
-
-        // Left Metric Panel
-        GameObject leftMetric = CreateUIElement("LeftMetricPanel", controlPanelObj, new Vector2(0.12f, 0.42f), new Vector2(0.33f, 0.72f));
-        CreateUIText(leftMetric, "MetricTitle", "ACTIVE", new Vector2(0f, 0.78f), new Vector2(1f, 0.98f), 20, Color.cyan, TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(leftMetric, "ActiveCarsCountText", "00", new Vector2(0f, 0.2f), new Vector2(1f, 0.78f), 76, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(leftMetric, "MetricSubtext", "NPC VEHICLES", new Vector2(0f, 0f), new Vector2(1f, 0.2f), 14, new Color(0.7f, 0.8f, 0.9f), TextAlignmentOptions.Center, FontStyles.Normal);
-
-        // Right Metric Panel
-        GameObject rightMetric = CreateUIElement("RightMetricPanel", controlPanelObj, new Vector2(0.67f, 0.42f), new Vector2(0.88f, 0.72f));
-        CreateUIText(rightMetric, "MetricTitle", "PARKED", new Vector2(0f, 0.78f), new Vector2(1f, 0.98f), 20, Color.cyan, TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(rightMetric, "ParkedCarsCountText", "00", new Vector2(0f, 0.2f), new Vector2(1f, 0.78f), 76, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-        CreateUIText(rightMetric, "MetricSubtext", "VALET SLOTS", new Vector2(0f, 0f), new Vector2(1f, 0.2f), 14, new Color(0.7f, 0.8f, 0.9f), TextAlignmentOptions.Center, FontStyles.Normal);
-
-        // Center Visualizer Panel
-        GameObject centerVisual = CreateUIElement("CenterVisualizer", controlPanelObj, new Vector2(0.36f, 0.30f), new Vector2(0.64f, 0.74f));
+        // Minimalistic 2x2 Grid of Buttons
+        // Row 1
+        CreateUIButton(controlPanelObj, "StartSimButton", "START SIMULATION", new Vector2(0.18f, 0.45f), new Vector2(0.48f, 0.58f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
+        CreateUIButton(controlPanelObj, "StopSimButton", "STOP SIMULATION", new Vector2(0.52f, 0.45f), new Vector2(0.82f, 0.58f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
         
-        GameObject roadBG = CreateUIElement("RoadBG", centerVisual, Vector2.zero, Vector2.one);
-        Image roadBGImg = roadBG.AddComponent<Image>();
-        roadBGImg.color = new Color(0.06f, 0.08f, 0.12f, 0.75f);
-        
-        GameObject roadStrip = CreateUIElement("RoadStrip", roadBG, new Vector2(0.1f, 0f), new Vector2(0.9f, 1f));
-        Image roadStripImg = roadStrip.AddComponent<Image>();
-        roadStripImg.color = new Color(0.02f, 0.03f, 0.05f, 0.9f);
-        
-        // Lane divider
-        GameObject divider = CreateUIElement("LaneDivider", roadStrip, new Vector2(0.48f, 0f), new Vector2(0.52f, 1f));
-        Image divImg = divider.AddComponent<Image>();
-        divImg.color = new Color(1f, 1f, 1f, 0.15f);
-
-        // Crosswalk stripes
-        GameObject crosswalk = CreateUIElement("Crosswalk", roadStrip, new Vector2(0f, 0.52f), new Vector2(1f, 0.62f));
-        for (int i = 0; i < 5; i++)
-        {
-            float xMin = 0.05f + i * 0.19f;
-            GameObject stripe = CreateUIElement("Stripe_" + i, crosswalk, new Vector2(xMin, 0f), new Vector2(xMin + 0.12f, 1f));
-            stripe.AddComponent<Image>().color = new Color(1f, 1f, 1f, 0.4f);
-        }
-
-        // Tapering sensor cone (simple projection trapezoid/rectangle)
-        GameObject sensorCone = CreateUIElement("SensorCone", roadStrip, new Vector2(0.25f, 0.35f), new Vector2(0.75f, 0.52f));
-        Image coneImg = sensorCone.AddComponent<Image>();
-        coneImg.color = new Color(0f, 0.9f, 1f, 0.15f);
-        
-        // Pedestrian silhouette text indicator
-        CreateUIText(roadStrip, "PedestrianSilhouette", "🚶", new Vector2(0.35f, 0.58f), new Vector2(0.65f, 0.78f), 30, Color.cyan);
-
-        // Car Outline Panel
-        GameObject carOutline = CreateUIElement("CarOutline", roadStrip, new Vector2(0.34f, 0.10f), new Vector2(0.66f, 0.35f));
-        Image carImg = carOutline.AddComponent<Image>();
-        carImg.color = new Color(0.55f, 0.6f, 0.68f, 0.9f);
-        
-        // Add windshield to car
-        GameObject windshield = CreateUIElement("Windshield", carOutline, new Vector2(0.15f, 0.62f), new Vector2(0.85f, 0.78f));
-        windshield.AddComponent<Image>().color = new Color(0.12f, 0.15f, 0.2f, 0.95f);
-        
-        // Add headlights to car
-        GameObject headlightL = CreateUIElement("HeadlightL", carOutline, new Vector2(0.1f, 0.92f), new Vector2(0.28f, 1f));
-        headlightL.AddComponent<Image>().color = Color.cyan;
-        GameObject headlightR = CreateUIElement("HeadlightR", carOutline, new Vector2(0.72f, 0.92f), new Vector2(0.9f, 1f));
-        headlightR.AddComponent<Image>().color = Color.cyan;
-
-        // Visualizer Overlay Text
-        CreateUIText(centerVisual, "OverlayText", "SAFE TO EXIT VEHICLE", 
-            new Vector2(0f, 0.82f), new Vector2(1f, 0.95f), 18, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
-
-        // Aligned Minimalistic Row of Buttons
-        CreateUIButton(controlPanelObj, "StartSimButton", "START SIM", new Vector2(0.08f, 0.15f), new Vector2(0.28f, 0.25f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
-        CreateUIButton(controlPanelObj, "StopSimButton", "STOP SIM", new Vector2(0.30f, 0.15f), new Vector2(0.50f, 0.25f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
-        CreateUIButton(controlPanelObj, "SpawnCarButton", "SPAWN CAR", new Vector2(0.52f, 0.15f), new Vector2(0.72f, 0.25f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
-        CreateUIButton(controlPanelObj, "HomeButton", "HOME", new Vector2(0.74f, 0.15f), new Vector2(0.92f, 0.25f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
+        // Row 2
+        CreateUIButton(controlPanelObj, "SpawnCarButton", "SPAWN TEST CAR", new Vector2(0.18f, 0.28f), new Vector2(0.48f, 0.41f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
+        CreateUIButton(controlPanelObj, "HomeButton", "HOME TELEPORT", new Vector2(0.52f, 0.28f), new Vector2(0.82f, 0.41f), new Color(0f, 0.85f, 1f, 0.85f), btnSprite);
         
         // Confirmation/Status Text
         TextMeshProUGUI statusText = CreateUIText(controlPanelObj, "StatusText", "SYSTEM READY. SPAWNING IS PAUSED.", 
-            new Vector2(0.1f, 0.07f), new Vector2(0.9f, 0.13f), 20, Color.yellow, TextAlignmentOptions.Center, FontStyles.Bold);
+            new Vector2(0.1f, 0.12f), new Vector2(0.9f, 0.20f), 22, Color.yellow, TextAlignmentOptions.Center, FontStyles.Bold);
         statusText.fontStyle = FontStyles.Italic | FontStyles.Bold;
 
-        // 7. Bottom Bar Layout
-        GameObject bottomBar = CreateUIElement("BottomBar", canvasObj, new Vector2(0.05f, 0.015f), new Vector2(0.95f, 0.055f));
-        CreateUIText(bottomBar, "BottomLeftText", "⚡ 321 KM    2146 KM", new Vector2(0f, 0f), new Vector2(0.33f, 1f), 16, Color.white, TextAlignmentOptions.Left, FontStyles.Normal);
-        CreateUIText(bottomBar, "BottomCenterText", "◀ CONNECTION ONLINE ▶", new Vector2(0.33f, 0f), new Vector2(0.66f, 1f), 16, Color.cyan, TextAlignmentOptions.Center, FontStyles.Normal);
-        CreateUIText(bottomBar, "BottomRightText", "28°C   12:00 AM", new Vector2(0.66f, 0f), new Vector2(1f, 1f), 16, Color.white, TextAlignmentOptions.Right, FontStyles.Normal);
-
-        // 8. Save Prefab
+        // 7. Save Prefab
         string prefabPath = "Assets/PreFabs/VRControlPanelCanvas.prefab";
         PrefabUtility.SaveAsPrefabAsset(canvasObj, prefabPath);
         Object.DestroyImmediate(canvasObj);
         
-        Debug.Log("[CreateVRCanvasPrefab] Successfully created and saved VR UI Canvas Prefab with futuristic theme: " + prefabPath);
+        Debug.Log("[CreateVRCanvasPrefab] Successfully created and saved VR UI Canvas Prefab with simplified dashboard style: " + prefabPath);
     }
     
     private static GameObject CreateUIElement(string name, GameObject parent, Vector2 anchorMin, Vector2 anchorMax)

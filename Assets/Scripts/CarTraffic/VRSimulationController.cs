@@ -32,12 +32,6 @@ public class VRSimulationController : MonoBehaviour
     private Button spawnCarButton;
     private Button homeButton;
     private TextMeshProUGUI statusText;
-    private TextMeshProUGUI activeCountText;
-    private TextMeshProUGUI parkedCountText;
-    private TextMeshProUGUI bottomRightText;
-    private TextMeshProUGUI gearDText;
-    private TextMeshProUGUI gearPText;
-
     private InputAction toggleUIAction;
     private bool isWelcomeClosed = false;
 
@@ -90,37 +84,6 @@ public class VRSimulationController : MonoBehaviour
             bool testCarExists = GameObject.Find("Player_TestCar") != null;
             spawnCarButton.interactable = !testCarExists;
         }
-
-        // 1. Update active and parked car counts dynamically from active sessions
-        int activeCount = 0;
-        int parkedCount = 0;
-        if (valetSystem != null)
-        {
-            foreach (var session in valetSystem.activeSessions)
-            {
-                if (session.state == ValetState.Parked)
-                    parkedCount++;
-                else
-                    activeCount++;
-            }
-        }
-        
-        if (activeCountText != null) activeCountText.text = activeCount.ToString("D2");
-        if (parkedCountText != null) parkedCountText.text = parkedCount.ToString("D2");
-
-        // 2. Update bottom-right clock and temperature
-        if (bottomRightText != null)
-        {
-            bottomRightText.text = "28°C    " + System.DateTime.Now.ToString("hh:mm tt");
-        }
-
-        // 3. Highlight D or P gear text based on spawner state
-        if (gearDText != null && gearPText != null)
-        {
-            bool isRunning = spawner != null && !spawner.isSpawningPaused;
-            gearDText.color = isRunning ? Color.cyan : new Color(0.25f, 0.25f, 0.25f, 0.5f);
-            gearPText.color = isRunning ? new Color(0.25f, 0.25f, 0.25f, 0.5f) : Color.cyan;
-        }
     }
 
     private void InitializeUI()
@@ -166,25 +129,6 @@ public class VRSimulationController : MonoBehaviour
             Transform statusTextTrans = controlPanel.transform.Find("StatusText");
             if (statusTextTrans != null) statusText = statusTextTrans.GetComponent<TextMeshProUGUI>();
 
-            // Find metric texts
-            Transform activeCountTrans = controlPanel.transform.Find("LeftMetricPanel/ActiveCarsCountText");
-            if (activeCountTrans != null) activeCountText = activeCountTrans.GetComponent<TextMeshProUGUI>();
-
-            Transform parkedCountTrans = controlPanel.transform.Find("RightMetricPanel/ParkedCarsCountText");
-            if (parkedCountTrans != null) parkedCountText = parkedCountTrans.GetComponent<TextMeshProUGUI>();
-
-            // Find gear texts
-            Transform gearDTrans = controlPanel.transform.Find("LeftGears/GearD");
-            if (gearDTrans != null) gearDText = gearDTrans.GetComponent<TextMeshProUGUI>();
-
-            Transform gearPTrans = controlPanel.transform.Find("LeftGears/GearP");
-            if (gearPTrans != null) gearPText = gearPTrans.GetComponent<TextMeshProUGUI>();
-        }
-
-        if (canvasInstance != null)
-        {
-            Transform bottomRightTrans = canvasInstance.transform.Find("BottomBar/BottomRightText");
-            if (bottomRightTrans != null) bottomRightText = bottomRightTrans.GetComponent<TextMeshProUGUI>();
         }
 
         // Bind button actions
