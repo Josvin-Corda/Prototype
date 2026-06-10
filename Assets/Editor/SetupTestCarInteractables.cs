@@ -51,10 +51,10 @@ public class SetupTestCarInteractables
         passengerBtnObj.name = "ReturnButton_Passenger";
         
         // Calculated localPosition and localRotation in VR_InteractionButton space:
-        // LocalPos: (0.79, -0.10, 35.81)
-        // LocalRot (Euler): (69.55, 223.48, 358.08)
-        passengerBtnObj.transform.localPosition = new Vector3(0.79f, -0.10f, 35.81f);
-        passengerBtnObj.transform.localRotation = Quaternion.Euler(69.55f, 223.48f, 358.08f);
+        // LocalPos: (0.78918f, -0.1015f, 35.80884f)
+        // LocalRot (Euler): (290.447f, 223.4842f, 181.9213f)
+        passengerBtnObj.transform.localPosition = new Vector3(0.789180f, -0.101500f, 35.808840f);
+        passengerBtnObj.transform.localRotation = Quaternion.Euler(290.447000f, 223.484200f, 181.921300f);
         
         // Save the prefab contents
         PrefabUtility.SaveAsPrefabAsset(prefabObj, prefabPath);
