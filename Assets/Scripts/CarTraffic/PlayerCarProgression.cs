@@ -82,7 +82,7 @@ public class PlayerCarProgression : MonoBehaviour
         UpdateStatus();
     }
 
-    private void SpawnPlayerCar()
+    public void SpawnPlayerCar()
     {
         if (playerCarInstance != null)
         {
@@ -195,7 +195,7 @@ public class PlayerCarProgression : MonoBehaviour
         }
     }
 
-    private void ToggleBoarding()
+    public void ToggleBoarding()
     {
         if (playerCarInstance == null)
         {

@@ -53,7 +53,7 @@ public class NPCCarSpawner : MonoBehaviour
     private bool hasDetectedAgentType = false;
 
     [HideInInspector]
-    public bool isSpawningPaused = false;
+    public bool isSpawningPaused = true;
 
     private void Start()
     {
