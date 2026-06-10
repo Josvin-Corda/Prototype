@@ -44,7 +44,9 @@ public class BarrierGate : MonoBehaviour
     [SerializeField] private SmartCarNavigator activeCar = null;
 
     private float closeTimer = 0f;
-    private bool headlightUpdated = false;
+    private bool carStopped = false;
+    private bool lightTurnedOn = false;
+    private float sequenceTimer = 0f;
 
     private void Start()
     {
@@ -147,14 +149,10 @@ public class BarrierGate : MonoBehaviour
         if (closestCar != null)
         {
             activeCar = closestCar;
-            headlightUpdated = false;
+            carStopped = false;
+            lightTurnedOn = false;
+            sequenceTimer = 0f;
             Debug.Log($"[BarrierGate] {gameObject.name} detected approaching car: {activeCar.name} at distance {minDistance:F2}m.");
-            
-            if (currentState == GateState.Closed || currentState == GateState.Closing)
-            {
-                currentState = GateState.Opening;
-                Debug.Log($"[BarrierGate] {gameObject.name} starting to open for {activeCar.name}.");
-            }
         }
     }
 
@@ -167,6 +165,8 @@ public class BarrierGate : MonoBehaviour
         {
             activeCar = null;
             closeTimer = closeDelay;
+            carStopped = false;
+            lightTurnedOn = false;
             return;
         }
 
@@ -183,27 +183,31 @@ public class BarrierGate : MonoBehaviour
             activeCar.IsBarrierStopped = false;
             activeCar = null;
             closeTimer = closeDelay;
+            carStopped = false;
+            lightTurnedOn = false;
             return;
         }
 
-        // Stop the car if it gets too close and the gate is not fully open
-        if (currentState != GateState.Open)
+        // 1. Force the car to stop when it reaches the stop distance
+        if (!carStopped)
         {
             if (distance <= stopDistance)
             {
-                if (!activeCar.IsBarrierStopped)
-                {
-                    activeCar.IsBarrierStopped = true;
-                    Debug.Log($"[BarrierGate] {gameObject.name} stopped {activeCar.name} at distance {distance:F2}m (waiting for gate to open).");
-                }
+                activeCar.IsBarrierStopped = true;
+                carStopped = true;
+                sequenceTimer = 0.8f; // Delay after stopping before turning on lights
+                Debug.Log($"[BarrierGate] {gameObject.name} stopped {activeCar.name} at distance {distance:F2}m. Waiting to turn on lights.");
             }
         }
-        else
+        // 2. Turn on/update headlights after stopping delay
+        else if (!lightTurnedOn)
         {
-            // Gate is open, apply headlight settings and resume car
-            if (!headlightUpdated)
+            sequenceTimer -= Time.deltaTime;
+            if (sequenceTimer <= 0f)
             {
-                headlightUpdated = true;
+                lightTurnedOn = true;
+                sequenceTimer = 0.8f; // Delay after turning on lights before gate starts opening
+                
                 if (!isExitGate)
                 {
                     // Entrance: turn headlight turquoise
@@ -216,12 +220,25 @@ public class BarrierGate : MonoBehaviour
                     activeCar.ResetAutoparkLight();
                     Debug.Log($"[BarrierGate] {gameObject.name} reset headlight to NORMAL for {activeCar.name}.");
                 }
-
-                if (activeCar.IsBarrierStopped)
-                {
-                    activeCar.IsBarrierStopped = false;
-                    Debug.Log($"[BarrierGate] {gameObject.name} resumed movement for {activeCar.name}.");
-                }
+            }
+        }
+        // 3. Start opening the gate after the light delay
+        else if (currentState == GateState.Closed || currentState == GateState.Closing)
+        {
+            sequenceTimer -= Time.deltaTime;
+            if (sequenceTimer <= 0f)
+            {
+                currentState = GateState.Opening;
+                Debug.Log($"[BarrierGate] {gameObject.name} starting to open for {activeCar.name} after light sequence.");
+            }
+        }
+        // 4. Release the car when the gate is fully open
+        else if (currentState == GateState.Open)
+        {
+            if (activeCar.IsBarrierStopped)
+            {
+                activeCar.IsBarrierStopped = false;
+                Debug.Log($"[BarrierGate] {gameObject.name} resumed movement for {activeCar.name} (gate fully open).");
             }
         }
     }
