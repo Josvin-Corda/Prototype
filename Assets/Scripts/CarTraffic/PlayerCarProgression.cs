@@ -372,4 +372,10 @@ public class PlayerCarProgression : MonoBehaviour
         }
     }
 
+    public bool IsPlayerInsideCar
+    {
+        get => isPlayerInsideCar;
+        set => isPlayerInsideCar = value;
+    }
+
 }
