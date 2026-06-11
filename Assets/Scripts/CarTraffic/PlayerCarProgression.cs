@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 /// <summary>
 /// Manages the player's custom VR TestCar. Handles spawning, boarding (parenting the XR Origin),
@@ -26,8 +27,11 @@ public class PlayerCarProgression : MonoBehaviour
     [Header("Status (Read Only)")]
     [SerializeField] private GameObject playerCarInstance;
     [SerializeField] private SmartCarNavigator playerCarNavigator;
-    [SerializeField] private bool isPlayerInsideCar = false;
     [SerializeField] private ValetState playerCarState = ValetState.Manual;
+    [SerializeField] private bool isPlayerInsideCar = false;
+    
+    private Coroutine autoParkCoroutine;
+    private Coroutine autoExitCoroutine;
 
     private void Start()
     {
@@ -237,7 +241,11 @@ public class PlayerCarProgression : MonoBehaviour
             // Parent to the car (maintains the world position we just set)
             xrOrigin.transform.SetParent(playerCarInstance.transform);
             
-            isPlayerInsideCar = true;
+            // Disable locomotion system while inside
+            Transform locomotion = xrOrigin.transform.Find("Locomotion");
+            if (locomotion != null) locomotion.gameObject.SetActive(false);
+            
+            IsPlayerInsideCar = true;
             Debug.Log("[PlayerCarProgression] Boarded the car. Parented XR Origin to vehicle.");
 
             // Start moving the car now that the player has boarded (if we are in the initial approach phase)
@@ -269,7 +277,12 @@ public class PlayerCarProgression : MonoBehaviour
             xrOrigin.transform.rotation = Quaternion.LookRotation(playerCarInstance.transform.forward);
 
             if (cc != null) cc.enabled = true; // Re-enable character controller
-            isPlayerInsideCar = false;
+
+            // Re-enable locomotion system on exit
+            Transform locomotion = xrOrigin.transform.Find("Locomotion");
+            if (locomotion != null) locomotion.gameObject.SetActive(true);
+
+            IsPlayerInsideCar = false;
             Debug.Log("[PlayerCarProgression] Exited the car. Unparented XR Origin.");
 
             // Stop the car if the player gets out before reaching the drop-off
@@ -300,17 +313,7 @@ public class PlayerCarProgression : MonoBehaviour
         {
             case ValetState.AtDropOff:
                 // Move from DropOff to Parking Spot
-                // Use reflection or access fields to call AdvanceSessionState
-                // Since AdvanceSessionState is private, we can invoke it or make it public if needed.
-                // Wait! Let's check: in ValetGuidanceSystem.cs, is there a public method?
-                // RecallCar and CompletePassengerBoarding are public and call AdvanceSessionState!
-                // Wait, but for AtDropOff to MovingToPark, there is no public method because it was automatic.
-                // Let's check if we can make a public progression call or reflection.
-                // To keep it simple, we can make ValetGuidanceSystem's AdvanceSessionState public, OR use reflection!
-                // Let's use reflection so we don't need to change other scripts too much, or actually we can just call it via reflection.
-                // Reflection is very clean and doesn't require modifying public API.
-                // Let's invoke AdvanceSessionState via reflection:
-                InvokePrivateMethod(valetSystem, "AdvanceSessionState", session);
+                valetSystem.AdvanceSessionState(session);
                 
                 // Resume NPC Spawner since player is clear of the entrance
                 if (spawner != null)
@@ -336,18 +339,7 @@ public class PlayerCarProgression : MonoBehaviour
         }
     }
 
-    private void InvokePrivateMethod(object target, string methodName, params object[] parameters)
-    {
-        var method = target.GetType().GetMethod(methodName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (method != null)
-        {
-            method.Invoke(target, parameters);
-        }
-        else
-        {
-            Debug.LogError($"[PlayerCarProgression] Method '{methodName}' not found on type '{target.GetType().Name}'");
-        }
-    }
+
 
     private void UpdateStatus()
     {
@@ -363,7 +355,7 @@ public class PlayerCarProgression : MonoBehaviour
                 playerCarState = ValetState.Exited;
                 playerCarInstance = null;
                 playerCarNavigator = null;
-                isPlayerInsideCar = false;
+                IsPlayerInsideCar = false;
             }
         }
         else
@@ -375,7 +367,116 @@ public class PlayerCarProgression : MonoBehaviour
     public bool IsPlayerInsideCar
     {
         get => isPlayerInsideCar;
-        set => isPlayerInsideCar = value;
+        set => SetPlayerInsideCar(value, true);
     }
 
+    public void SetPlayerInsideCar(bool inside, bool triggerEvents = true)
+    {
+        if (isPlayerInsideCar != inside)
+        {
+            isPlayerInsideCar = inside;
+            if (triggerEvents)
+            {
+                if (isPlayerInsideCar)
+                {
+                    OnPlayerEntered();
+                }
+                else
+                {
+                    OnPlayerExited();
+                }
+            }
+        }
+    }
+
+    private void OnPlayerEntered()
+    {
+        if (autoParkCoroutine != null)
+        {
+            StopCoroutine(autoParkCoroutine);
+            autoParkCoroutine = null;
+            Debug.Log("[PlayerCarProgression] Auto-park canceled: Player re-entered the car.");
+        }
+
+        // Trigger automatic exit timer if boarded at the pick-up spot
+        if (playerCarNavigator != null && valetSystem != null)
+        {
+            ValetSession session = valetSystem.activeSessions.Find(s => s.car == playerCarNavigator);
+            if (session != null && session.state == ValetState.AtPickUp)
+            {
+                if (autoExitCoroutine != null)
+                {
+                    StopCoroutine(autoExitCoroutine);
+                }
+                autoExitCoroutine = StartCoroutine(AutoExitDelayRoutine(session));
+            }
+        }
+    }
+
+    private void OnPlayerExited()
+    {
+        if (autoExitCoroutine != null)
+        {
+            StopCoroutine(autoExitCoroutine);
+            autoExitCoroutine = null;
+            Debug.Log("[PlayerCarProgression] Auto-exit canceled: Player exited the car.");
+        }
+
+        if (playerCarNavigator == null || valetSystem == null) return;
+
+        ValetSession session = valetSystem.activeSessions.Find(s => s.car == playerCarNavigator);
+        if (session != null)
+        {
+            if (session.state == ValetState.AtDropOff)
+            {
+                if (autoParkCoroutine != null)
+                {
+                    StopCoroutine(autoParkCoroutine);
+                }
+                autoParkCoroutine = StartCoroutine(AutoParkDelayRoutine(session));
+            }
+            else if (session.isWaitingForPlayerExit)
+            {
+                Debug.Log("[PlayerCarProgression] Player got out of the car at the exit. Despawning car now.");
+                
+                // Destroy car
+                Destroy(playerCarInstance);
+                
+                // Remove session
+                valetSystem.activeSessions.Remove(session);
+                valetSystem.UpdateTrafficProviderData();
+                
+                // Reset local references
+                playerCarInstance = null;
+                playerCarNavigator = null;
+                playerCarState = ValetState.Exited;
+            }
+        }
+    }
+
+    private IEnumerator AutoParkDelayRoutine(ValetSession session)
+    {
+        Debug.Log("[PlayerCarProgression] Player exited at drop-off. Auto-parking player car in 5 seconds...");
+        yield return new WaitForSeconds(5f);
+
+        if (session != null && session.state == ValetState.AtDropOff && !isPlayerInsideCar)
+        {
+            Debug.Log("[PlayerCarProgression] 5 seconds elapsed. Triggering auto-park for player car.");
+            ProgressValetState();
+        }
+        autoParkCoroutine = null;
+    }
+
+    private IEnumerator AutoExitDelayRoutine(ValetSession session)
+    {
+        Debug.Log("[PlayerCarProgression] Player entered car at pick-up spot. Auto-exiting in 5 seconds...");
+        yield return new WaitForSeconds(5f);
+
+        if (session != null && session.state == ValetState.AtPickUp && isPlayerInsideCar)
+        {
+            Debug.Log("[PlayerCarProgression] 5 seconds elapsed. Triggering automatic exit for player car.");
+            valetSystem.CompletePassengerBoarding(playerCarNavigator);
+        }
+        autoExitCoroutine = null;
+    }
 }

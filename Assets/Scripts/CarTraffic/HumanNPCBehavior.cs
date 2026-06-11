@@ -331,16 +331,16 @@ public class HumanNPCBehavior : MonoBehaviour
                 {
                     currentState = NPCState.WaitingAtTotem;
                     agent.isStopped = true;
-                    turnTimer = 0f; // Use turnTimer for 5s waiting time at the totem
-                    Debug.Log($"[NPC] Driver {gameObject.name} reached Totem. Waiting 5s before recall.");
+                    turnTimer = 0f; // Use turnTimer for 2.5s waiting time at the totem
+                    Debug.Log($"[NPC] Driver {gameObject.name} reached Totem. Waiting 2.5s before recall.");
                 }
                 break;
 
             case NPCState.WaitingAtTotem:
                 turnTimer += Time.deltaTime;
-                if (turnTimer >= 5.0f)
+                if (turnTimer >= 2.5f)
                 {
-                    // Trigger recall of the associated car after 5s
+                    // Trigger recall of the associated car after 2.5s
                     if (associatedCar != null && valetSystem != null)
                     {
                         valetSystem.RecallCar(associatedCar);

@@ -17,6 +17,20 @@ public class VRSimulationController : MonoBehaviour
     [Tooltip("Keyboard binding path for testing in Editor.")]
     public string toggleUIKeyboardBinding = "<Keyboard>/u";
 
+    [Header("Card Spawning Settings")]
+    [Tooltip("Left controller Y button binding path.")]
+    public string spawnCardBinding = "<XRController>{LeftHand}/secondaryButton";
+    
+    [Tooltip("Keyboard binding path for card spawning testing in Editor.")]
+    public string spawnCardKeyboardBinding = "<Keyboard>/c";
+
+    [Header("UI Distance & Layout Settings")]
+    [Tooltip("Distance in meters to spawn the UI in front of the player.")]
+    public float uiSpawnDistance = 1.5f;
+    
+    [Tooltip("Vertical offset relative to the player's eye level (negative is lower).")]
+    public float uiVerticalOffset = -0.1f;
+
     [Header("System References")]
     public NPCCarSpawner spawner;
     public PlayerCarProgression playerProgression;
@@ -33,7 +47,9 @@ public class VRSimulationController : MonoBehaviour
     private Button homeButton;
     private TextMeshProUGUI statusText;
     private InputAction toggleUIAction;
+    private InputAction spawnCardAction;
     private bool isWelcomeClosed = false;
+    private GameObject spawnedCardInstance;
 
     private void Awake()
     {
@@ -43,16 +59,25 @@ public class VRSimulationController : MonoBehaviour
         toggleUIAction.AddBinding(toggleUIKeyboardBinding);
         
         toggleUIAction.started += ctx => OnToggleUI();
+
+        // 2. Configure the input action for spawning payment card (Left Controller Y Button / Key C)
+        spawnCardAction = new InputAction("SpawnCard");
+        spawnCardAction.AddBinding(spawnCardBinding);
+        spawnCardAction.AddBinding(spawnCardKeyboardBinding);
+        
+        spawnCardAction.started += ctx => ToggleSpawnCard();
     }
 
     private void OnEnable()
     {
         if (toggleUIAction != null) toggleUIAction.Enable();
+        if (spawnCardAction != null) spawnCardAction.Enable();
     }
 
     private void OnDisable()
     {
         if (toggleUIAction != null) toggleUIAction.Disable();
+        if (spawnCardAction != null) spawnCardAction.Disable();
     }
 
     private void Start()
@@ -125,7 +150,7 @@ public class VRSimulationController : MonoBehaviour
 
             Transform homeBtnTrans = controlPanel.transform.Find("HomeButton");
             if (homeBtnTrans != null) homeButton = homeBtnTrans.GetComponent<Button>();
-
+ 
             Transform statusTextTrans = controlPanel.transform.Find("StatusText");
             if (statusTextTrans != null) statusText = statusTextTrans.GetComponent<TextMeshProUGUI>();
 
@@ -188,20 +213,25 @@ public class VRSimulationController : MonoBehaviour
         Transform camTransform = Camera.main != null ? Camera.main.transform : null;
         if (camTransform != null)
         {
-            // Position canvas 2.2 meters in front of camera
-            Vector3 spawnPos = camTransform.position + camTransform.forward * 2.2f;
-            // Place it at camera's height
-            spawnPos.y = camTransform.position.y;
+            // Project camera's forward vector horizontally (flat XZ plane)
+            Vector3 forward = camTransform.forward;
+            forward.y = 0f;
+            forward.Normalize();
+
+            // Position canvas in front of player
+            Vector3 spawnPos = camTransform.position + forward * uiSpawnDistance;
+            spawnPos.y = camTransform.position.y + uiVerticalOffset;
             
             canvasInstance.transform.position = spawnPos;
             
-            // Rotate canvas to look at camera (invert forward to face the right direction)
-            canvasInstance.transform.rotation = Quaternion.LookRotation(canvasInstance.transform.position - camTransform.position);
+            // Rotate canvas to look back at the camera
+            canvasInstance.transform.LookAt(camTransform);
+            canvasInstance.transform.Rotate(0f, 180f, 0f);
         }
         else
         {
-            // Fallback to origin
-            canvasInstance.transform.position = new Vector3(0f, 1.5f, 2f);
+            // Fallback
+            canvasInstance.transform.position = new Vector3(0f, 1.4f, 1.5f);
             canvasInstance.transform.rotation = Quaternion.identity;
         }
     }
@@ -303,11 +333,7 @@ public class VRSimulationController : MonoBehaviour
             // Sync PlayerCarProgression internal states if inside
             if (playerProgression != null)
             {
-                var insideField = playerProgression.GetType().GetField("isPlayerInsideCar", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (insideField != null)
-                {
-                    insideField.SetValue(playerProgression, false);
-                }
+                playerProgression.SetPlayerInsideCar(false, triggerEvents: false);
             }
 
             // Teleport player rig safely
@@ -348,8 +374,7 @@ public class VRSimulationController : MonoBehaviour
             xrOriginObj.transform.SetParent(null);
             if (playerProgression != null)
             {
-                var insideField = playerProgression.GetType().GetField("isPlayerInsideCar", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (insideField != null) insideField.SetValue(playerProgression, false);
+                playerProgression.SetPlayerInsideCar(false, triggerEvents: false);
             }
             
             // Snap player safely to lobby entrance to avoid falling through geometry
@@ -379,12 +404,7 @@ public class VRSimulationController : MonoBehaviour
         {
             valetSystem.activeSessions.Clear();
             
-            // Force-update the ETA Billboard counts to zero
-            var method = valetSystem.GetType().GetMethod("UpdateTrafficProviderData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (method != null)
-            {
-                method.Invoke(valetSystem, null);
-            }
+            valetSystem.UpdateTrafficProviderData();
         }
 
         // 5. Clear ETA billboard tracked orchestrator reference to prevent rendering stale routes
@@ -403,5 +423,103 @@ public class VRSimulationController : MonoBehaviour
         {
             statusText.text = message;
         }
+    }
+
+    private void ToggleSpawnCard()
+    {
+        if (spawnedCardInstance == null)
+        {
+            // 1. Find Left Hand Controller
+            Transform leftHand = null;
+            GameObject xrOriginObj = GameObject.Find("XR Origin (XR Rig)");
+            if (xrOriginObj != null)
+            {
+                leftHand = FindChildRecursive(xrOriginObj.transform, "Left Controller");
+                if (leftHand == null)
+                {
+                    leftHand = FindChildRecursive(xrOriginObj.transform, "LeftHand Controller");
+                }
+                if (leftHand == null)
+                {
+                    leftHand = FindChildRecursiveContaining(xrOriginObj.transform, "Left");
+                }
+            }
+
+            if (leftHand == null)
+            {
+                UpdateStatusText("<color=red>Error: Left Hand Controller not found in XR Rig.</color>");
+                Debug.LogError("[VRSimulationController] Left Controller not found under XR Origin.");
+                return;
+            }
+
+            // 2. Spawn Card GameObject dynamically
+            spawnedCardInstance = new GameObject("PaymentCard");
+            spawnedCardInstance.transform.SetParent(leftHand, false);
+
+            // Position it in front of the hand
+            spawnedCardInstance.transform.localPosition = new Vector3(0f, -0.03f, 0.12f);
+            spawnedCardInstance.transform.localRotation = Quaternion.Euler(30f, 0f, 0f);
+
+            // Add PaymentCard component
+            PaymentCard cardComp = spawnedCardInstance.AddComponent<PaymentCard>();
+            cardComp.cardNumber = "PLAYER-CARD-9999";
+
+            // Add Rigidbody (kinematic so it registers triggers as it moves)
+            Rigidbody rb = spawnedCardInstance.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
+            // Create visual cube representation of card
+            GameObject cardVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cardVisual.name = "Visual";
+            cardVisual.transform.SetParent(spawnedCardInstance.transform, false);
+            cardVisual.transform.localScale = new Vector3(0.12f, 0.08f, 0.005f); // 12cm x 8cm x 0.5cm (visible in VR)
+
+            // Ensure the visual collider is set to trigger
+            BoxCollider col = cardVisual.GetComponent<BoxCollider>();
+            if (col != null) col.isTrigger = true;
+
+            // Create material
+            Shader shader = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null 
+                ? Shader.Find("Standard") 
+                : Shader.Find("Universal Render Pipeline/Lit");
+            Material cardMat = new Material(shader);
+            cardMat.color = new Color(0f, 0.6f, 0.9f, 0.9f); // Sleek tech blue/cyan
+            cardVisual.GetComponent<Renderer>().sharedMaterial = cardMat;
+
+            UpdateStatusText("<color=cyan>[Y Button] Payment Card attached to Left Hand.</color>");
+            Debug.Log("[VRSimulationController] Spawned Payment Card on Left Hand via Left Controller Y button.");
+        }
+        else
+        {
+            // Despawn Card
+            Destroy(spawnedCardInstance);
+            spawnedCardInstance = null;
+
+            UpdateStatusText("<color=yellow>[Y Button] Payment Card despawned.</color>");
+            Debug.Log("[VRSimulationController] Despawned Payment Card via Left Controller Y button.");
+        }
+    }
+
+    private Transform FindChildRecursive(Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform result = FindChildRecursive(parent.GetChild(i), name);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private Transform FindChildRecursiveContaining(Transform parent, string substring)
+    {
+        if (parent.name.Contains(substring)) return parent;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform result = FindChildRecursiveContaining(parent.GetChild(i), substring);
+            if (result != null) return result;
+        }
+        return null;
     }
 }

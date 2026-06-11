@@ -11,6 +11,7 @@ public class BarrierGate : MonoBehaviour
     [Header("References")]
     [Tooltip("The Transform of the moving bar. If left empty, will attempt to find 'barrier gate/Bar' automatically.")]
     [SerializeField] private Transform barTransform;
+    [SerializeField] private CardReader entranceReader;
 
     [Header("Gate Settings")]
     [Tooltip("Check this if this gate is the exit gate. Leave unchecked for entrance gate.")]
@@ -47,6 +48,7 @@ public class BarrierGate : MonoBehaviour
     private bool carStopped = false;
     private bool lightTurnedOn = false;
     private float sequenceTimer = 0f;
+    private bool isCardAuthorized = false;
 
     private void Start()
     {
@@ -59,7 +61,7 @@ public class BarrierGate : MonoBehaviour
                 barTransform = transform.Find("Bar");
             }
         }
-
+ 
         if (barTransform == null)
         {
             Debug.LogError($"[BarrierGate] {gameObject.name} could not find Bar Transform! Please assign it in the Inspector.");
@@ -70,6 +72,16 @@ public class BarrierGate : MonoBehaviour
             barTransform.localRotation = Quaternion.Euler(closedLocalRotation);
         }
         currentState = GateState.Closed;
+ 
+        // Wire up the entrance card reader
+        if (!isExitGate && entranceReader == null)
+        {
+            entranceReader = GetComponentInChildren<CardReader>();
+        }
+        if (entranceReader != null)
+        {
+            entranceReader.OnCardRead.AddListener(OnEntranceCardTapped);
+        }
     }
 
     private void Update()
@@ -152,6 +164,7 @@ public class BarrierGate : MonoBehaviour
             carStopped = false;
             lightTurnedOn = false;
             sequenceTimer = 0f;
+            isCardAuthorized = false;
             Debug.Log($"[BarrierGate] {gameObject.name} detected approaching car: {activeCar.name} at distance {minDistance:F2}m.");
         }
     }
@@ -167,6 +180,7 @@ public class BarrierGate : MonoBehaviour
             closeTimer = closeDelay;
             carStopped = false;
             lightTurnedOn = false;
+            isCardAuthorized = false;
             return;
         }
 
@@ -185,6 +199,7 @@ public class BarrierGate : MonoBehaviour
             closeTimer = closeDelay;
             carStopped = false;
             lightTurnedOn = false;
+            isCardAuthorized = false;
             return;
         }
 
@@ -206,7 +221,7 @@ public class BarrierGate : MonoBehaviour
             if (sequenceTimer <= 0f)
             {
                 lightTurnedOn = true;
-                sequenceTimer = 0.8f; // Delay after turning on lights before gate starts opening
+                sequenceTimer = 1.5f; // Wait 1.5 seconds for card tap mimic / physical tap
                 
                 if (!isExitGate)
                 {
@@ -222,17 +237,48 @@ public class BarrierGate : MonoBehaviour
                 }
             }
         }
-        // 3. Start opening the gate after the light delay
+        // 3. Wait for card authorization before opening the entrance gate
+        else if (!isCardAuthorized)
+        {
+            if (isExitGate)
+            {
+                // Exit gates do not require card authorization
+                isCardAuthorized = true;
+                sequenceTimer = 0f;
+            }
+            else
+            {
+                // Entrance gate: wait for reader authorization (or automatic mimic timeout)
+                sequenceTimer -= Time.deltaTime;
+                if (sequenceTimer <= 0f)
+                {
+                    // Automatic mimic timeout (only for NPC cars)
+                    bool isPlayerCar = false;
+                    var valetSys = Object.FindAnyObjectByType<ValetGuidanceSystem>();
+                    if (valetSys != null)
+                    {
+                        var session = valetSys.activeSessions.Find(s => s.car == activeCar);
+                        if (session != null) isPlayerCar = session.isPlayerSession;
+                    }
+
+                    if (!isPlayerCar)
+                    {
+                        AuthorizeGateViaCard(null);
+                    }
+                }
+            }
+        }
+        // 4. Start opening the gate after authorization
         else if (currentState == GateState.Closed || currentState == GateState.Closing)
         {
             sequenceTimer -= Time.deltaTime;
             if (sequenceTimer <= 0f)
             {
                 currentState = GateState.Opening;
-                Debug.Log($"[BarrierGate] {gameObject.name} starting to open for {activeCar.name} after light sequence.");
+                Debug.Log($"[BarrierGate] {gameObject.name} starting to open for {activeCar.name} after authorization.");
             }
         }
-        // 4. Release the car when the gate is fully open
+        // 5. Release the car when the gate is fully open
         else if (currentState == GateState.Open)
         {
             if (activeCar.IsBarrierStopped)
@@ -254,5 +300,39 @@ public class BarrierGate : MonoBehaviour
         // Draw forward direction
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(transform.position, transform.position + transform.forward * 2f);
+    }
+
+    private void OnEntranceCardTapped(string cardNumber)
+    {
+        if (activeCar != null && !isCardAuthorized)
+        {
+            Debug.Log($"[BarrierGate] Physical card tapped at entrance: {cardNumber}");
+            AuthorizeGateViaCard(cardNumber);
+        }
+    }
+
+    private void AuthorizeGateViaCard(string cardNumber)
+    {
+        if (isCardAuthorized) return;
+        isCardAuthorized = true;
+        sequenceTimer = 0.5f; // Short delay before gate starts opening
+
+        if (cardNumber == null) // Triggered by auto-mimic timeout
+        {
+            string cardNum = "UNKNOWN-CARD";
+            var valetSys = Object.FindAnyObjectByType<ValetGuidanceSystem>();
+            if (valetSys != null)
+            {
+                var session = valetSys.activeSessions.Find(s => s.car == activeCar);
+                if (session != null) cardNum = session.paymentCardNumber;
+            }
+            if (entranceReader != null)
+            {
+                entranceReader.TriggerSuccessfulRead(cardNum, playBeep: false);
+            }
+            Debug.Log($"[BarrierGate] {gameObject.name} card reader automatically mimicked tap for card: {cardNum}");
+        }
+
+        Debug.Log($"[BarrierGate] {gameObject.name} authorized for car {activeCar.name}.");
     }
 }

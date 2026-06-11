@@ -31,10 +31,13 @@ public class ValetSession
     public int passengersPendingBoarding;
     public float returnWaitTime;
     public bool isPlayerSession;
+    public string paymentCardNumber;
     [System.NonSerialized]
     public bool lightReset;
     [System.NonSerialized]
     public System.Action arrivalHandler;
+    [System.NonSerialized]
+    public bool isWaitingForPlayerExit;
 }
 
 [System.Serializable]
@@ -45,6 +48,7 @@ public class CarDatabaseEntry
     public string contact;
     public int numPassengers;
     public float returnWaitTime;
+    public string paymentCardNumber;
 }
 
 [System.Serializable]
@@ -210,6 +214,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         string finalContact = "";
         int finalNumPassengers = 1;
         float finalReturnWaitTime = 15f;
+        string finalCard = "";
 
         if (!string.IsNullOrEmpty(car.plateNumber) &&
             carDatabaseLookup.TryGetValue(car.plateNumber, out var dbEntry))
@@ -219,8 +224,9 @@ public class ValetGuidanceSystem : MonoBehaviour
             finalContact = dbEntry.contact;
             finalNumPassengers = dbEntry.numPassengers;
             finalReturnWaitTime = dbEntry.returnWaitTime;
+            finalCard = dbEntry.paymentCardNumber;
 
-            Debug.Log($"[Valet System] Database match found for plate: {finalPlate}");
+            Debug.Log($"[Valet System] Database match found for plate: {finalPlate}, Card: {finalCard}");
         }
         else
         {
@@ -229,8 +235,9 @@ public class ValetGuidanceSystem : MonoBehaviour
             finalContact = GenerateContact();
             finalNumPassengers = Random.Range(1, 5); // 1 to 4 passengers
             finalReturnWaitTime = Random.Range(10f, 30f); // 10s to 30s wait time
+            finalCard = "NPC-CARD-" + Random.Range(1000, 9999);
 
-            Debug.Log($"[Valet System] No database match for plate: '{car.plateNumber}'. Generated random owner details.");
+            Debug.Log($"[Valet System] No database match for plate: '{car.plateNumber}'. Generated random owner details. Card: {finalCard}");
         }
 
         ValetSession session = new ValetSession
@@ -247,7 +254,8 @@ public class ValetGuidanceSystem : MonoBehaviour
             numPassengers = finalNumPassengers,
             returnWaitTime = finalReturnWaitTime,
             passengersPendingBoarding = 0,
-            lightReset = false
+            lightReset = false,
+            paymentCardNumber = finalCard
         };
 
         Debug.Log($"<color=cyan>[Valet System] Registered Car: {car.name}</color>\n" +
@@ -359,9 +367,6 @@ public class ValetGuidanceSystem : MonoBehaviour
                 break;
 
             case ValetState.Exiting:
-                session.state = ValetState.Exited;
-                Debug.Log($"[Valet System] {session.car.name} has exited the parking lot.");
-
                 // Turn off the light upon crossing/reaching the exit
                 session.car.ResetAutoparkLight();
 
@@ -372,24 +377,16 @@ public class ValetGuidanceSystem : MonoBehaviour
                     session.arrivalHandler = null;
                 }
 
-                // If this is the player's car, unparent the VR player before destroying the vehicle
                 if (session.isPlayerSession)
                 {
-                    GameObject xrOriginObj = GameObject.Find("XR Origin (XR Rig)");
-                    if (xrOriginObj != null)
-                    {
-                        xrOriginObj.transform.SetParent(null);
-                        xrOriginObj.transform.position = new Vector3(-14.0f, 0.12f, -17.37f); // starting position
-                        xrOriginObj.transform.rotation = Quaternion.identity;
-
-                        CharacterController cc = xrOriginObj.GetComponent<CharacterController>();
-                        if (cc != null)
-                        {
-                            cc.enabled = true;
-                        }
-                        Debug.Log("[Valet System] Safely unparented and reset XR Origin position before destroying player car.");
-                    }
+                    session.state = ValetState.Exited;
+                    session.isWaitingForPlayerExit = true;
+                    Debug.Log($"[Valet System] Player car {session.car.name} reached exit. Waiting for player to get out before despawning.");
+                    break;
                 }
+
+                session.state = ValetState.Exited;
+                Debug.Log($"[Valet System] {session.car.name} has exited the parking lot.");
 
                 // Destroy spawned vehicle to free memory
                 Destroy(session.car.gameObject);
@@ -400,7 +397,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         }
     }
 
-    private void AdvanceSessionState(ValetSession session)
+    public void AdvanceSessionState(ValetSession session)
     {
         if (session == null || session.car == null)
             return;
@@ -633,7 +630,7 @@ public class ValetGuidanceSystem : MonoBehaviour
         return pickupSpot.name;
     }
 
-    private void UpdateTrafficProviderData()
+    public void UpdateTrafficProviderData()
     {
         if (parkingTrafficProvider == null)
             return;

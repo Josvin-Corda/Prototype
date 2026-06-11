@@ -92,6 +92,10 @@ public class TeleportButton : MonoBehaviour
 
         if (cc != null) cc.enabled = true; // Re-enable on exit
 
+        // Re-enable locomotion system on exit
+        Transform locomotion = xrOrigin.transform.Find("Locomotion");
+        if (locomotion != null) locomotion.gameObject.SetActive(true);
+
         if (avatar != null)
         {
             avatar.transform.SetParent(xrOrigin.transform);
@@ -168,6 +172,10 @@ public class TeleportButton : MonoBehaviour
 
         // 4. Rendi di nuovo lo XR Rig figlio della macchina
         xrOrigin.transform.SetParent(vehicle);
+
+        // Disable locomotion system while inside the car to prevent physics/gravity drift
+        Transform locomotion = xrOrigin.transform.Find("Locomotion");
+        if (locomotion != null) locomotion.gameObject.SetActive(false);
 
         Debug.Log("Rientrato in macchina! Gerarchie ripristinate.");
 
