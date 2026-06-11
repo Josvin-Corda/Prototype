@@ -151,10 +151,7 @@ public class TeleportButton : MonoBehaviour
             avatar.SetActive(false);
         }
 
-        // 3. Rendi di nuovo lo XR Rig figlio della macchina
-        xrOrigin.transform.SetParent(vehicle);
-
-        // 4. Riposiziona il visore sul sedile (StartingPoint)
+        // 3. Riposiziona il visore sul sedile (StartingPoint/targetLocation) in world space first
         // Find the Main Camera under the XR Origin to offset the rig base correctly
         Camera mainCam = xrOrigin.GetComponentInChildren<Camera>();
         if (mainCam != null)
@@ -167,6 +164,9 @@ public class TeleportButton : MonoBehaviour
             xrOrigin.transform.position = targetLocation.position;
         }
         xrOrigin.transform.rotation = targetLocation.rotation;
+
+        // 4. Rendi di nuovo lo XR Rig figlio della macchina
+        xrOrigin.transform.SetParent(vehicle);
 
         Debug.Log("Rientrato in macchina! Gerarchie ripristinate.");
 
