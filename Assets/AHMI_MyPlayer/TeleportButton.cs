@@ -5,6 +5,7 @@ public class TeleportButton : MonoBehaviour
     [Header("Riferimenti Spaziali")]
     [SerializeField] private GameObject xrOrigin;      // Il tuo "XR Origin (XR Rig)"
     [SerializeField] private Transform targetLocation; // Per uscire = ArrivalPoint | Per entrare = StartingPoint
+    [SerializeField] private Transform exitLocation;   // NUOVO: Punto di uscita (es. ArrivalPoint o ArrivalPoint_Passenger)
     [SerializeField] private Transform vehicle;        // NUOVO: Trascina qui la macchina (es. tesla_car1)
 
     [Header("Riferimenti Avatar")]
@@ -39,10 +40,46 @@ public class TeleportButton : MonoBehaviour
     /// </summary>
     public void TrasportaGiocatore()
     {
-        if (xrOrigin == null || targetLocation == null)
+        Transform dest = exitLocation;
+        if (dest == null) dest = targetLocation;
+
+        if (xrOrigin == null || dest == null)
         {
             Debug.LogError("TeleportButton: Mancano dei riferimenti nell'Inspector!");
             return;
+        }
+
+        // Smart Exit redirection:
+        // If we are exiting to one side but the player's current position is closer to the other seat,
+        // dynamically redirect to the corresponding exit point.
+        if (vehicle != null)
+        {
+            Transform carChair = vehicle.Find("ModeVisuals/car_chair");
+            Transform pedFrontseat = vehicle.Find("ModeVisuals/ped_frontseat");
+            if (carChair != null && pedFrontseat != null)
+            {
+                float distToDriver = Vector3.Distance(xrOrigin.transform.position, carChair.position);
+                float distToPassenger = Vector3.Distance(xrOrigin.transform.position, pedFrontseat.position);
+
+                if (dest.name == "ArrivalPoint" && distToPassenger < distToDriver)
+                {
+                    Transform passengerExit = vehicle.Find("ModeVisuals/ArrivalPoint_Passenger");
+                    if (passengerExit != null)
+                    {
+                        dest = passengerExit;
+                        Debug.Log("Smart Exit: Redirected exit to passenger side (ArrivalPoint_Passenger) based on seat proximity.");
+                    }
+                }
+                else if (dest.name == "ArrivalPoint_Passenger" && distToDriver < distToPassenger)
+                {
+                    Transform driverExit = vehicle.Find("ModeVisuals/ArrivalPoint");
+                    if (driverExit != null)
+                    {
+                        dest = driverExit;
+                        Debug.Log("Smart Exit: Redirected exit to driver side (ArrivalPoint) based on seat proximity.");
+                    }
+                }
+            }
         }
 
         // Disable CharacterController before teleporting to avoid physics override issues
@@ -50,8 +87,8 @@ public class TeleportButton : MonoBehaviour
         if (cc != null) cc.enabled = false;
 
         xrOrigin.transform.SetParent(null);
-        xrOrigin.transform.position = targetLocation.position;
-        xrOrigin.transform.rotation = targetLocation.rotation;
+        xrOrigin.transform.position = dest.position;
+        xrOrigin.transform.rotation = dest.rotation;
 
         if (cc != null) cc.enabled = true; // Re-enable on exit
 
@@ -153,6 +190,26 @@ public class TeleportButton : MonoBehaviour
                     Debug.Log("Player boarded. Releasing Test Car to proceed.");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Unified entry/exit toggle: Enters the car if outside, exits if inside.
+    /// </summary>
+    public void ToggleBoardingState()
+    {
+        PlayerCarProgression progression = Object.FindAnyObjectByType<PlayerCarProgression>();
+        bool isInside = progression != null && progression.IsPlayerInsideCar;
+
+        if (isInside)
+        {
+            Debug.Log("ToggleBoardingState: Player is inside the car, triggering exit.");
+            TrasportaGiocatore();
+        }
+        else
+        {
+            Debug.Log("ToggleBoardingState: Player is outside the car, triggering entrance.");
+            RientraInMacchina();
         }
     }
 }

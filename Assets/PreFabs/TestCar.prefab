@@ -391,6 +391,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &316393740744069689
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9198573030498367623}
+  m_Layer: 0
+  m_Name: ArrivalPoint_Passenger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9198573030498367623
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 316393740744069689}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.25607127, y: 0.6591112, z: 0.6591112, w: -0.25607127}
+  m_LocalPosition: {x: -0.02185, y: 0.002475, z: -0.00425}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 947018201527245952}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &386412824647937684
 GameObject:
   m_ObjectHideFlags: 0
@@ -2166,6 +2197,7 @@ Transform:
   - {fileID: 4279602142778986684}
   - {fileID: 6747868433296627694}
   - {fileID: 552808842140382586}
+  - {fileID: 9198573030498367623}
   m_Father: {fileID: 7080474869596487594}
   m_LocalEulerAnglesHint: {x: 270, y: 180, z: 0}
 --- !u!1 &1670452791236807020
@@ -2500,6 +2532,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeleportButton
   xrOrigin: {fileID: 0}
   targetLocation: {fileID: 552808842140382586}
+  exitLocation: {fileID: 4279602142778986684}
   vehicle: {fileID: 7080474869596487594}
   avatar: {fileID: 0}
 --- !u!114 &7513847786181429481
@@ -2552,11 +2585,11 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 3222098394180004715}
         m_TargetAssemblyTypeName: TeleportButton, Assembly-CSharp
-        m_MethodName: RientraInMacchina
+        m_MethodName: ToggleBoardingState
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgumentAssemblyTypeName: 
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -2717,7 +2750,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeleportButton
   xrOrigin: {fileID: 0}
-  targetLocation: {fileID: 552808842140382586}
+  targetLocation: {fileID: 1868311187711078388}
+  exitLocation: {fileID: 9198573030498367623}
   vehicle: {fileID: 7080474869596487594}
   avatar: {fileID: 0}
 --- !u!114 &6168332777430725574
@@ -2770,11 +2804,11 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 3420947169607999118}
         m_TargetAssemblyTypeName: TeleportButton, Assembly-CSharp
-        m_MethodName: RientraInMacchina
+        m_MethodName: ToggleBoardingState
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgumentAssemblyTypeName: 
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -10718,11 +10752,11 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 363258853559935384}
         m_TargetAssemblyTypeName: TeleportButton, Assembly-CSharp
-        m_MethodName: TrasportaGiocatore
+        m_MethodName: ToggleBoardingState
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgumentAssemblyTypeName: 
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -10768,6 +10802,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeleportButton
   xrOrigin: {fileID: 0}
   targetLocation: {fileID: 4279602142778986684}
+  exitLocation: {fileID: 4279602142778986684}
   vehicle: {fileID: 7080474869596487594}
   avatar: {fileID: 0}
 --- !u!1 &7478922070056246368
