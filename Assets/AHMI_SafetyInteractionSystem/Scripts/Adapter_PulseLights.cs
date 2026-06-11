@@ -18,7 +18,7 @@ namespace AHMI.Safety
 
         private void Update()
         {
-            if (!active)
+            if (!active || lights == null)
                 return;
 
             float pulse = Mathf.PingPong(Time.time * blinkSpeed, 1f);
@@ -35,6 +35,8 @@ namespace AHMI.Safety
         {
             active = true;
 
+            if (lights == null) return;
+
             foreach (Light light in lights)
             {
                 if (light != null)
@@ -45,6 +47,8 @@ namespace AHMI.Safety
         public void StopBlinking()
         {
             active = false;
+
+            if (lights == null) return;
 
             foreach (Light light in lights)
             {

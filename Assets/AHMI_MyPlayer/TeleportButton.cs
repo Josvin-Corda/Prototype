@@ -151,8 +151,10 @@ public class TeleportButton : MonoBehaviour
             avatar.SetActive(false);
         }
 
-        // 3. Riposiziona il visore sul sedile (StartingPoint/targetLocation) in world space first
-        // Find the Main Camera under the XR Origin to offset the rig base correctly
+        // 3. Riposiziona il visore sul sedile (StartingPoint/targetLocation) in world space
+        // Set rotation first to prevent camera orbiting when rotation changes
+        xrOrigin.transform.rotation = targetLocation.rotation;
+
         Camera mainCam = xrOrigin.GetComponentInChildren<Camera>();
         if (mainCam != null)
         {
@@ -163,7 +165,6 @@ public class TeleportButton : MonoBehaviour
         {
             xrOrigin.transform.position = targetLocation.position;
         }
-        xrOrigin.transform.rotation = targetLocation.rotation;
 
         // 4. Rendi di nuovo lo XR Rig figlio della macchina
         xrOrigin.transform.SetParent(vehicle);
