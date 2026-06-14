@@ -6,6 +6,11 @@ namespace AHMI.Safety
     {
         [SerializeField] private AudioSource audioSource;
 
+        public void Initialize(AudioSource source)
+        {
+            audioSource = source;
+        }
+
         public void PlayAlert()
         {
             if (audioSource != null && !audioSource.isPlaying)

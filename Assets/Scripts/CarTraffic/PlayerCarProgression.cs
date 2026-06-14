@@ -24,6 +24,11 @@ public class PlayerCarProgression : MonoBehaviour
     public NPCCarSpawner spawner;
     public ValetGuidanceSystem valetSystem;
 
+    [Header("Screen Bridge Scene References")]
+    [SerializeField] private BarrierGate entranceGate;
+    [SerializeField] private BarrierGate exitGate;
+    [SerializeField] private CardReader entranceReader;
+
     [Header("Status (Read Only)")]
     [SerializeField] private GameObject playerCarInstance;
     [SerializeField] private SmartCarNavigator playerCarNavigator;
@@ -110,27 +115,9 @@ public class PlayerCarProgression : MonoBehaviour
         spawner.isSpawningPaused = true;
         Debug.Log("[PlayerCarProgression] NPC Car Spawner has been paused for player insertion.");
 
-        // 2. Get correct agent type ID from spawner
-        int targetAgentTypeID = -1923039037;
-        NavMeshAgent spawnerAgent = spawner.carPrefabs.Length > 0 ? spawner.carPrefabs[0].GetComponent<NavMeshAgent>() : null;
-        if (spawnerAgent != null)
-        {
-            targetAgentTypeID = spawnerAgent.agentTypeID;
-        }
-
         // Determine Spawn Pos and Rotation (preserving prefab rotation offsets)
         Vector3 spawnPos = spawner.spawnPoint.position;
         Quaternion spawnRot = Quaternion.Euler(spawner.spawnRotation) * testCarPrefab.transform.localRotation;
-
-        NavMeshHit hit;
-        NavMeshQueryFilter filter = new NavMeshQueryFilter();
-        filter.agentTypeID = targetAgentTypeID;
-        filter.areaMask = NavMesh.AllAreas;
-
-        if (NavMesh.SamplePosition(spawnPos, out hit, 15f, filter))
-        {
-            spawnPos = hit.position;
-        }
 
         // 3. Instantiate the vehicle (deactivate prefab temporarily to prevent NavMeshAgent awake binding error)
         bool wasActive = testCarPrefab.activeSelf;
@@ -138,64 +125,123 @@ public class PlayerCarProgression : MonoBehaviour
         playerCarInstance = Instantiate(testCarPrefab, spawnPos, spawnRot);
         testCarPrefab.SetActive(wasActive);
 
+        // Register the player car immediately after instantiation
+        RegisterPlayerCar(playerCarInstance);
+    }
+
+    public void RegisterPlayerCar(GameObject spawnedCar)
+    {
+        if (spawnedCar == null)
+        {
+            Debug.LogWarning("[PlayerCarProgression] RegisterPlayerCar called with null spawnedCar.");
+            return;
+        }
+
+        playerCarInstance = spawnedCar;
         playerCarInstance.name = "Player_TestCar";
         playerCarInstance.transform.localScale = testCarPrefab.transform.localScale;
-
-        // 4. Configure Components (matching NPC car configuration)
-        NavMeshAgent agent = playerCarInstance.GetComponent<NavMeshAgent>();
-        if (agent == null)
-        {
-            agent = playerCarInstance.AddComponent<NavMeshAgent>();
-        }
-        
-        // Configure correct type first
-        agent.agentTypeID = targetAgentTypeID;
-        agent.speed = spawner.agentSpeed;
-        agent.angularSpeed = spawner.agentAngularSpeed;
-        agent.acceleration = spawner.agentAcceleration;
-        agent.radius = spawner.agentRadius;
-        agent.height = spawner.agentHeight;
-        agent.baseOffset = spawner.agentBaseOffset;
-        agent.stoppingDistance = spawner.agentStoppingDistance;
-        agent.avoidancePriority = 10; // High priority for player's car
-        agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-        agent.autoBraking = true;
-        agent.autoRepath = true;
+        Debug.Log("[PlayerCarProgression] Player car instantiated: " + playerCarInstance.name);
 
         playerCarNavigator = playerCarInstance.GetComponent<SmartCarNavigator>();
         if (playerCarNavigator == null)
         {
             playerCarNavigator = playerCarInstance.AddComponent<SmartCarNavigator>();
         }
-        playerCarNavigator.IsParked = false;
-        
-        // Hold the car at the spawn point initially
-        playerCarNavigator.IsCrosswalkStopped = true;
+        Debug.Log("[PlayerCarProgression] SmartCarNavigator resolved: " + (playerCarNavigator != null ? "Yes" : "No"));
 
-        if (string.IsNullOrEmpty(playerCarNavigator.plateNumber))
+        if (playerCarNavigator != null)
         {
-            playerCarNavigator.plateNumber = "PLAYER-1";
+            playerCarNavigator.IsParked = false;
+            playerCarNavigator.IsCrosswalkStopped = true;
+
+            if (string.IsNullOrEmpty(playerCarNavigator.plateNumber))
+            {
+                playerCarNavigator.plateNumber = "PLAYER-1";
+            }
+        }
+
+        // Configure NavMeshAgent components (matching NPC car configuration)
+        int targetAgentTypeID = -1923039037;
+        if (spawner != null)
+        {
+            NavMeshAgent spawnerAgent = spawner.carPrefabs.Length > 0 ? spawner.carPrefabs[0].GetComponent<NavMeshAgent>() : null;
+            if (spawnerAgent != null)
+            {
+                targetAgentTypeID = spawnerAgent.agentTypeID;
+            }
+        }
+
+        NavMeshAgent agent = playerCarInstance.GetComponent<NavMeshAgent>();
+        if (agent == null)
+        {
+            agent = playerCarInstance.AddComponent<NavMeshAgent>();
+        }
+
+        if (spawner != null)
+        {
+            agent.agentTypeID = targetAgentTypeID;
+            agent.speed = spawner.agentSpeed;
+            agent.angularSpeed = spawner.agentAngularSpeed;
+            agent.acceleration = spawner.agentAcceleration;
+            agent.radius = spawner.agentRadius;
+            agent.height = spawner.agentHeight;
+            agent.baseOffset = spawner.agentBaseOffset;
+            agent.stoppingDistance = spawner.agentStoppingDistance;
+            agent.avoidancePriority = 10; // High priority for player's car
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+            agent.autoBraking = true;
+            agent.autoRepath = true;
         }
 
         // Activate and Warp agent onto NavMesh
         playerCarInstance.SetActive(true);
-        if (NavMesh.SamplePosition(spawnPos, out hit, 10f, filter))
+        if (spawner != null && spawner.spawnPoint != null)
         {
-            Vector3 warpPos = new Vector3(hit.position.x, hit.position.y + agent.baseOffset, hit.position.z);
-            agent.Warp(warpPos);
-            playerCarInstance.transform.position = warpPos;
+            Vector3 spawnPos = playerCarInstance.transform.position;
+            NavMeshHit hit;
+            NavMeshQueryFilter filter = new NavMeshQueryFilter();
+            filter.agentTypeID = targetAgentTypeID;
+            filter.areaMask = NavMesh.AllAreas;
+
+            if (NavMesh.SamplePosition(spawnPos, out hit, 10f, filter))
+            {
+                Vector3 warpPos = new Vector3(hit.position.x, hit.position.y + agent.baseOffset, hit.position.z);
+                agent.Warp(warpPos);
+                playerCarInstance.transform.position = warpPos;
+            }
         }
 
-        // 5. Register with valet system
-        if (valetSystem != null)
+        // Register with valet system
+        if (valetSystem != null && playerCarNavigator != null)
         {
             valetSystem.RegisterCar(playerCarNavigator);
             ValetSession session = valetSystem.activeSessions.Find(s => s.car == playerCarNavigator);
             if (session != null)
             {
                 session.isPlayerSession = true;
-                Debug.Log("<color=green>[PlayerCarProgression] Player car registered in valet system as PlayerSession.</color>");
+                Debug.Log("[PlayerCarProgression] Valet session registered or already present: State=" + session.state);
             }
+            else
+            {
+                Debug.LogWarning("[PlayerCarProgression] Valet session could not be registered/located.");
+            }
+        }
+
+        // Initialize the player car screen bridge
+        PlayerCarScreenBridge screenBridge = playerCarInstance.GetComponentInChildren<PlayerCarScreenBridge>(true);
+        if (screenBridge != null)
+        {
+            Debug.Log("[PlayerCarProgression] PlayerCarScreenBridge found on car.");
+            screenBridge.Initialize(valetSystem, entranceGate, exitGate, entranceReader);
+            Debug.Log("[PlayerCarProgression] bridge.Initialize called.");
+            
+            bool gatesAndReaderNonNull = entranceGate != null && exitGate != null && entranceReader != null;
+            Debug.Log("[PlayerCarProgression] Scene dependencies non-null check: " + (gatesAndReaderNonNull ? "Pass" : "Fail") + 
+                      $" (entranceGate: {entranceGate != null}, exitGate: {exitGate != null}, entranceReader: {entranceReader != null})");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerCarProgression] PlayerCarScreenBridge not found on car.");
         }
     }
 
@@ -353,9 +399,13 @@ public class PlayerCarProgression : MonoBehaviour
             else
             {
                 playerCarState = ValetState.Exited;
-                playerCarInstance = null;
-                playerCarNavigator = null;
-                IsPlayerInsideCar = false;
+                // Only clear references if the GameObject has been physically destroyed
+                if (playerCarInstance == null)
+                {
+                    playerCarInstance = null;
+                    playerCarNavigator = null;
+                    IsPlayerInsideCar = false;
+                }
             }
         }
         else

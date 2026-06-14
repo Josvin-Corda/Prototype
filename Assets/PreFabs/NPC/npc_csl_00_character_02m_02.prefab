@@ -6042,6 +6042,7 @@ GameObject:
   - component: {fileID: 413562869133271636}
   - component: {fileID: -6990137110372597892}
   - component: {fileID: -1855743398156837477}
+  - component: {fileID: 2194221719842035206}
   m_Layer: 6
   m_Name: npc_csl_00_character_02m_02
   m_TagString: Untagged
@@ -6197,6 +6198,29 @@ MonoBehaviour:
   totemRadius: 1
   returnCenterRadius: 1.5
   pickUpRadius: 1.8
+--- !u!136 &2194221719842035206
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7296818736855454420}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.3
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &7301579622123786748
 GameObject:
   m_ObjectHideFlags: 0

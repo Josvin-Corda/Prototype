@@ -11,6 +11,11 @@ namespace AHMI.Safety
 
         private bool active;
 
+        public void Initialize(Light[] lightsToPulse)
+        {
+            lights = lightsToPulse ?? System.Array.Empty<Light>();
+        }
+
         private void Awake()
         {
             StopBlinking();

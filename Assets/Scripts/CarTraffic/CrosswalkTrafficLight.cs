@@ -61,6 +61,9 @@ public class CrosswalkTrafficLight : MonoBehaviour
     [Tooltip("Half-depth on the Z axis that defines the crosswalk interior for NPC detection.")]
     [SerializeField] private float crosswalkHalfDepth = 6.0f;
 
+    [SerializeField, Min(0f)]
+    private float pedestrianApproachBuffer = 2f;
+
     // ─── Timing Settings ─────────────────────────────────────────────────────────
     [Header("Timing Settings")]
     [Tooltip("How long (seconds) to wait in Cooldown state before reverting to green.")]
@@ -82,6 +85,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
     [SerializeField] private SignalState currentState = SignalState.CarsFree;
     [SerializeField] private float stateTimer = 0f;
     [SerializeField] private bool npcCurrentlyCrossing = false;
+    [SerializeField] private bool pedestrianPriorityGranted = false;
 
     // ─── Internal ────────────────────────────────────────────────────────────────
     private TrafficNode criticalNode1;
@@ -98,8 +102,8 @@ public class CrosswalkTrafficLight : MonoBehaviour
     private static readonly Color OffColor = new Color(0.15f, 0.15f, 0.15f, 1f);
 
     // ─── Public Properties ────────────────────────────────────────────────────────
-    /// <summary>True when pedestrians may cross (light is green / cars free).</summary>
-    public bool CanPedestriansCross => currentState == SignalState.CarsFree;
+    /// <summary>True when pedestrians may cross (light is green / cars free or pedestrian priority is granted).</summary>
+    public bool CanPedestriansCross => currentState == SignalState.CarsFree || pedestrianPriorityGranted;
 
     /// <summary>True when a car is approaching or crossing (light is red for pedestrians).</summary>
     public bool IsCarActive => currentState == SignalState.CarApproaching || currentState == SignalState.CarCrossing;
@@ -152,6 +156,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
 
     private void Update()
     {
+        CleanHeldCars();
         npcCurrentlyCrossing = IsNPCInsideCrosswalk();
         UpdateActiveCrossingCars();
 
@@ -173,6 +178,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
         {
             // ── Default: green for peds, cars flow freely ──────────────────────
             case SignalState.CarsFree:
+                SetPedestrianPriority(false);
                 if (IsCarInCriticalZone())
                 {
                     EnterCarApproaching();
@@ -183,21 +189,40 @@ public class CrosswalkTrafficLight : MonoBehaviour
             case SignalState.CarApproaching:
                 stateTimer += Time.deltaTime;
 
-                if (npcCurrentlyCrossing)
+                if (IsNPCApproachingOrCrossing())
                 {
                     // Hold all approaching cars at the stopline
                     HoldCarsAtStopLine();
+                    CleanHeldCars();
 
-                    // Wait up to npcClearanceWait, then release anyway
-                    if (stateTimer >= npcClearanceWait)
+                    // Rule C: wait until at least one valid approaching car is confirmed held
+                    if (heldCars.Count > 0)
                     {
+                        SetPedestrianPriority(true);
+                    }
+                    else
+                    {
+                        SetPedestrianPriority(false);
+                    }
+
+                    // Rule A: vehicles must not be released by timeout while the physical crosswalk remains occupied.
+                    if (npcCurrentlyCrossing)
+                    {
+                        stateTimer = 0f; // Reset/hold the timer
+                    }
+
+                    // Failsafe timeout release: only if NOT physically occupied (NPC is only waiting in approach zone)
+                    if (stateTimer >= npcClearanceWait && !npcCurrentlyCrossing)
+                    {
+                        SetPedestrianPriority(false);
                         ReleaseCarsFromStopLine();
                         EnterCarCrossing();
                     }
                 }
                 else
                 {
-                    // No NPC crossing — car drives through freely
+                    // No NPC waiting or crossing: release cars and enter crossing
+                    SetPedestrianPriority(false);
                     ReleaseCarsFromStopLine();
                     EnterCarCrossing();
                 }
@@ -205,6 +230,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
 
             // ── Car is crossing the crosswalk ──────────────────────────────────
             case SignalState.CarCrossing:
+                SetPedestrianPriority(false);
                 if (!IsCarNearCrosswalk())
                 {
                     // Car appears clear — start (or continue) the confirmation timer
@@ -226,6 +252,7 @@ public class CrosswalkTrafficLight : MonoBehaviour
 
             // ── Brief cooldown after car clears ───────────────────────────────
             case SignalState.Cooldown:
+                SetPedestrianPriority(false);
                 stateTimer += Time.deltaTime;
                 if (stateTimer >= cooldownDuration)
                 {
@@ -360,6 +387,41 @@ public class CrosswalkTrafficLight : MonoBehaviour
             }
         }
         return false;
+    }
+
+    private bool IsNPCApproachingOrCrossing()
+    {
+        HumanNPCBehavior[] allNPCs = Object.FindObjectsByType<HumanNPCBehavior>(FindObjectsSortMode.None);
+        float minX = crosswalkCentreX - crosswalkHalfWidth - pedestrianApproachBuffer;
+        float maxX = crosswalkCentreX + crosswalkHalfWidth + pedestrianApproachBuffer;
+        float minZ = crosswalkCentreZ - crosswalkHalfDepth;
+        float maxZ = crosswalkCentreZ + crosswalkHalfDepth;
+
+        foreach (var npc in allNPCs)
+        {
+            if (npc == null) continue;
+            Vector3 pos = npc.transform.position;
+            if (pos.x >= minX && pos.x <= maxX && pos.z >= minZ && pos.z <= maxZ)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void CleanHeldCars()
+    {
+        heldCars.RemoveWhere(car => car == null || !car.gameObject.activeInHierarchy || !car.enabled || car.IsParked);
+    }
+
+    private void SetPedestrianPriority(bool granted)
+    {
+        if (pedestrianPriorityGranted != granted)
+        {
+            pedestrianPriorityGranted = granted;
+            UpdateVisuals();
+            Debug.Log($"[CrosswalkTrafficLight] {gameObject.name}: Pedestrian priority set to {granted} (Visuals updated)");
+        }
     }
 
     /// <summary>

@@ -16,6 +16,13 @@ public class SmartCarNavigator : MonoBehaviour
     public float wheelRadius = 0.35f;
     public float maxSteerAngle = 50f;
 
+    [SerializeField, Min(0f)]
+    private float safetyBrakeRate = 2f;
+    [SerializeField, Min(0f)]
+    private float safetyAccelerationRate = 1.5f;
+    private float normalSpeed;
+    private bool normalSpeedInitialized = false;
+
     [Header("Valet Configuration")]
     [Tooltip("Unique registration plate number of the vehicle. If empty, the valet system will generate a random one.")]
     public string plateNumber;
@@ -151,11 +158,23 @@ public class SmartCarNavigator : MonoBehaviour
                 UnityEngine.Debug.LogWarning($"[SmartCarNavigator] Could not find NavMesh for agent type {agent.agentTypeID} near {transform.position}");
             }
         }
+
+        if (agent != null)
+        {
+            normalSpeed = agent.speed;
+            normalSpeedInitialized = true;
+        }
     }
 
     void Update()
     {
         if (isReversing) return;
+
+        if (agent != null && !normalSpeedInitialized && agent.speed > 0f)
+        {
+            normalSpeed = agent.speed;
+            normalSpeedInitialized = true;
+        }
 
         // If safety waiting is active, pulsate headlights emission
         if (isSafetyWaiting)
@@ -217,59 +236,114 @@ public class SmartCarNavigator : MonoBehaviour
         }
         else if (agent.enabled && agent.isOnNavMesh)
         {
-            bool stoppedBySafety = CheckTrafficSafety() || isBarrierStopped || isSafetyWaiting || isCrosswalkStopped;
+            bool hardStopActive = CheckTrafficSafety() || isBarrierStopped || isCrosswalkStopped;
+            bool safetyStopActive = isSafetyWaiting;
 
-            if (stoppedBySafety)
+            if (hardStopActive)
             {
                 if (!agent.isStopped)
                 {
                     agent.isStopped = true;
                 }
+                agent.speed = 0f;
                 currentSpeed = 0f;
                 steerAngle = 0f;
                 agent.nextPosition = transform.position;
             }
-            else
+            else if (safetyStopActive)
             {
-                if (agent.isStopped)
-                {
-                    agent.isStopped = false;
-                }
+                // Safety-only stop: decelerate smoothly
+                agent.speed = Mathf.MoveTowards(agent.speed, 0f, safetyBrakeRate * Time.deltaTime);
+                currentSpeed = agent.speed;
 
-                if (!agent.isStopped)
+                if (agent.speed <= 0.01f)
                 {
-                    // Get target speed from agent's pathfinding velocity
-                    Vector3 desiredVel = agent.desiredVelocity;
-                    currentSpeed = desiredVel.magnitude;
-
-                    if (currentSpeed > 0.01f)
+                    agent.speed = 0f;
+                    currentSpeed = 0f;
+                    if (!agent.isStopped)
                     {
-                        // Smoothly rotate the heading towards the steering target
+                        agent.isStopped = true;
+                    }
+                    steerAngle = 0f;
+                    agent.nextPosition = transform.position;
+                }
+                else
+                {
+                    if (agent.isStopped)
+                    {
+                        agent.isStopped = false;
+                    }
+
+                    // Obtain steering target/velocity direction while decelerating
+                    Vector3 desiredVel = agent.desiredVelocity;
+                    if (desiredVel.magnitude > 0.01f)
+                    {
                         Vector3 targetDir = agent.steeringTarget - transform.position;
-                        targetDir.y = 0f; // Keep rotation in horizontal plane
+                        targetDir.y = 0f;
                         if (targetDir.sqrMagnitude > 0.001f)
                         {
                             Quaternion targetRot = Quaternion.LookRotation(targetDir.normalized, Vector3.up);
                             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 6f);
                         }
 
-                        // Calculate visual wheel steer angle
                         Vector3 localTarget = transform.InverseTransformPoint(agent.steeringTarget);
                         float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
                         steerAngle = Mathf.Clamp(targetAngle, -maxSteerAngle, maxSteerAngle);
                     }
 
-                    // Move the vehicle strictly forward along its current heading (horizontal movement)
+                    // Move vehicle strictly forward using the reduced speed
                     Vector3 movement = transform.forward * currentSpeed * Time.deltaTime;
                     transform.position += movement;
-
-                    // Snap the transform's Y coordinate to the agent's nextPosition.y (the NavMesh height)
                     transform.position = new Vector3(transform.position.x, agent.nextPosition.y, transform.position.z);
-
-                    // Sync the agent's internal simulated position with the actual vehicle position
                     agent.nextPosition = transform.position;
 
-                    // Prevent path planning drift
+                    if (Vector3.Distance(transform.position, agent.nextPosition) > 1.5f)
+                    {
+                        agent.nextPosition = transform.position;
+                    }
+                }
+            }
+            else
+            {
+                // Resume and normal movement: accelerate smoothly
+                if (agent.isStopped)
+                {
+                    agent.isStopped = false;
+                }
+
+                agent.speed = Mathf.MoveTowards(agent.speed, normalSpeed, safetyAccelerationRate * Time.deltaTime);
+
+                if (!agent.isStopped)
+                {
+                    Vector3 desiredVel = agent.desiredVelocity;
+                    currentSpeed = desiredVel.magnitude;
+
+                    // Ensure currentSpeed and agent.speed are synchronized/capped
+                    if (currentSpeed > agent.speed)
+                    {
+                        currentSpeed = agent.speed;
+                    }
+
+                    if (currentSpeed > 0.01f)
+                    {
+                        Vector3 targetDir = agent.steeringTarget - transform.position;
+                        targetDir.y = 0f;
+                        if (targetDir.sqrMagnitude > 0.001f)
+                        {
+                            Quaternion targetRot = Quaternion.LookRotation(targetDir.normalized, Vector3.up);
+                            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 6f);
+                        }
+
+                        Vector3 localTarget = transform.InverseTransformPoint(agent.steeringTarget);
+                        float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
+                        steerAngle = Mathf.Clamp(targetAngle, -maxSteerAngle, maxSteerAngle);
+                    }
+
+                    Vector3 movement = transform.forward * currentSpeed * Time.deltaTime;
+                    transform.position += movement;
+                    transform.position = new Vector3(transform.position.x, agent.nextPosition.y, transform.position.z);
+                    agent.nextPosition = transform.position;
+
                     if (Vector3.Distance(transform.position, agent.nextPosition) > 1.5f)
                     {
                         agent.nextPosition = transform.position;
@@ -616,55 +690,65 @@ public class SmartCarNavigator : MonoBehaviour
     private void SetupSafetyAudioAndLights(AHMI.Safety.SafetyInteractionState safetyState)
     {
         // 1. Audio Setup
-        AudioSource audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
-        audioSource.playOnAwake = false;
-        audioSource.loop = true;
-        audioSource.spatialBlend = 1.0f; // 3D sound
-        audioSource.minDistance = 2.0f;
-        audioSource.maxDistance = 15.0f;
-        if (audioSource.clip == null)
-        {
-            audioSource.clip = CreateBeepClip();
-        }
-
-        AHMI.Safety.SafetyAudioAdapter audioAdapter = gameObject.GetComponent<AHMI.Safety.SafetyAudioAdapter>();
+        AHMI.Safety.SafetyAudioAdapter audioAdapter = GetComponentInChildren<AHMI.Safety.SafetyAudioAdapter>(true);
         if (audioAdapter == null)
         {
-            audioAdapter = gameObject.AddComponent<AHMI.Safety.SafetyAudioAdapter>();
-        }
-        
-        // Use reflection to assign private serialized field 'audioSource' on SafetyAudioAdapter
-        var audioField = typeof(AHMI.Safety.SafetyAudioAdapter).GetField("audioSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (audioField != null)
-        {
-            audioField.SetValue(audioAdapter, audioSource);
-        }
-
-        // Wire event handlers
-        safetyState.OnSafetyWaitStarted.AddListener(audioAdapter.PlayAlert);
-        safetyState.OnSafetyWaitEnded.AddListener(audioAdapter.StopAlert);
-
-        // 2. Visual Blinking Lights Setup (Dynamic lights)
-        Light[] childLights = GetComponentsInChildren<Light>(true);
-        if (childLights.Length > 0)
-        {
-            AHMI.Safety.BlinkingLightAdapter lightAdapter = gameObject.GetComponent<AHMI.Safety.BlinkingLightAdapter>();
-            if (lightAdapter == null)
+            AudioSource audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
             {
-                lightAdapter = gameObject.AddComponent<AHMI.Safety.BlinkingLightAdapter>();
+                audioSource = gameObject.AddComponent<AudioSource>();
+            }
+            audioSource.playOnAwake = false;
+            audioSource.loop = true;
+            audioSource.spatialBlend = 1.0f; // 3D sound
+            audioSource.minDistance = 2.0f;
+            audioSource.maxDistance = 15.0f;
+            if (audioSource.clip == null)
+            {
+                audioSource.clip = CreateBeepClip();
+            }
+
+            audioAdapter = gameObject.GetComponent<AHMI.Safety.SafetyAudioAdapter>();
+            if (audioAdapter == null)
+            {
+                audioAdapter = gameObject.AddComponent<AHMI.Safety.SafetyAudioAdapter>();
             }
             
-            var lightsField = typeof(AHMI.Safety.BlinkingLightAdapter).GetField("lights", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (lightsField != null)
-            {
-                lightsField.SetValue(lightAdapter, childLights);
-            }
+            audioAdapter.Initialize(audioSource);
+        }
 
+        if (audioAdapter != null)
+        {
+            // Wire event handlers (remove first to prevent duplicate subscriptions)
+            safetyState.OnSafetyWaitStarted.RemoveListener(audioAdapter.PlayAlert);
+            safetyState.OnSafetyWaitStarted.AddListener(audioAdapter.PlayAlert);
+            safetyState.OnSafetyWaitEnded.RemoveListener(audioAdapter.StopAlert);
+            safetyState.OnSafetyWaitEnded.AddListener(audioAdapter.StopAlert);
+        }
+
+        // 2. Visual Blinking Lights Setup
+        AHMI.Safety.BlinkingLightAdapter lightAdapter = GetComponentInChildren<AHMI.Safety.BlinkingLightAdapter>(true);
+        if (lightAdapter == null)
+        {
+            Light[] childLights = GetComponentsInChildren<Light>(true);
+            if (childLights.Length > 0)
+            {
+                lightAdapter = gameObject.GetComponent<AHMI.Safety.BlinkingLightAdapter>();
+                if (lightAdapter == null)
+                {
+                    lightAdapter = gameObject.AddComponent<AHMI.Safety.BlinkingLightAdapter>();
+                }
+                
+                lightAdapter.Initialize(childLights);
+            }
+        }
+
+        if (lightAdapter != null)
+        {
+            // Wire event handlers (remove first to prevent duplicate subscriptions)
+            safetyState.OnSafetyWaitStarted.RemoveListener(lightAdapter.StartBlinking);
             safetyState.OnSafetyWaitStarted.AddListener(lightAdapter.StartBlinking);
+            safetyState.OnSafetyWaitEnded.RemoveListener(lightAdapter.StopBlinking);
             safetyState.OnSafetyWaitEnded.AddListener(lightAdapter.StopBlinking);
         }
     }

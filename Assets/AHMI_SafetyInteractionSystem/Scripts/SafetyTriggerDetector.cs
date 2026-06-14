@@ -54,10 +54,16 @@ namespace AHMI.Safety
 
         public void ClearDetection()
         {
+            bool hadTrackedColliders = detectedObjects.Count > 0;
             detectedObjects.Clear();
 
             if (safetyState != null)
-                safetyState.EndSafetyWait();
+            {
+                if (hadTrackedColliders || safetyState.IsWaiting)
+                {
+                    safetyState.EndSafetyWait();
+                }
+            }
         }
     }
 }

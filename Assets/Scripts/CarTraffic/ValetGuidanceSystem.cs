@@ -116,6 +116,8 @@ public class ValetGuidanceSystem : MonoBehaviour
 
     private void Start()
     {
+        UpdateTrafficProviderData();
+
         if (testOnStart)
         {
             StartCoroutine(TestTriggerRoutine());
@@ -326,6 +328,18 @@ public class ValetGuidanceSystem : MonoBehaviour
                     }
                 }
             }
+            else if (session.state == ValetState.AtPickUp)
+            {
+                if (!session.isPlayerSession)
+                {
+                    session.stateTimer -= Time.deltaTime;
+                    if (session.stateTimer <= 0)
+                    {
+                        Debug.LogWarning($"[Valet System] Pick-up failsafe timeout reached for {session.car.name}. Releasing vehicle.");
+                        CompletePassengerBoarding(session.car);
+                    }
+                }
+            }
             else if (session.state == ValetState.Exiting)
             {
                 // Turn off the turquoise light once the car crosses the exit boundary (X < 2.5f)
@@ -364,6 +378,16 @@ public class ValetGuidanceSystem : MonoBehaviour
                 session.state = ValetState.AtPickUp;
                 session.stateTimer = pickUpWaitTime;
                 Debug.Log($"[Valet System] {session.car.name} reached pick-up zone. Waiting for passengers for {pickUpWaitTime}s.");
+                if (session.isPlayerSession)
+                {
+                    CarETAOrchestrator orchestrator = session.car != null ? session.car.GetComponent<CarETAOrchestrator>() : null;
+                    if (orchestrator != null)
+                    {
+                        orchestrator.ClearRoute();
+                    }
+                    string pickupLabel = GetPickupLabel(session.pickUpSpot);
+                    SimulationEvents.RaiseETAUpdated(0, pickupLabel, "YOUR CAR IS HERE");
+                }
                 break;
 
             case ValetState.Exiting:
@@ -391,10 +415,10 @@ public class ValetGuidanceSystem : MonoBehaviour
                 // Destroy spawned vehicle to free memory
                 Destroy(session.car.gameObject);
                 activeSessions.Remove(session);
-
-                UpdateTrafficProviderData();
                 break;
         }
+
+        UpdateTrafficProviderData();
     }
 
     public void AdvanceSessionState(ValetSession session)
@@ -493,8 +517,6 @@ public class ValetGuidanceSystem : MonoBehaviour
                 Debug.LogWarning($"[Valet System] No valid path found from parking spot {session.designatedSpot.name} to pickup spot {session.pickUpSpot.name}.");
             }
 
-            UpdateTrafficProviderData();
-
             SendPickupRouteToETABillboard(session, path);
 
             session.car.AssignRouteAndSpot(path, session.pickUpSpot, reverseOnStart: true);
@@ -532,6 +554,8 @@ public class ValetGuidanceSystem : MonoBehaviour
 
             session.car.AssignRouteAndSpot(path, exitSpot, reverseOnStart: reverse);
         }
+
+        UpdateTrafficProviderData();
     }
 
     public void RecallCar(SmartCarNavigator car)
@@ -552,6 +576,12 @@ public class ValetGuidanceSystem : MonoBehaviour
         ValetSession session = activeSessions.Find(s => s.car == car);
         if (session != null && session.state == ValetState.AtPickUp)
         {
+            // Clear any stale safety detections on the car caused by boarding passengers being destroyed
+            var safetyDetector = car.GetComponentInChildren<AHMI.Safety.SafetyTriggerDetector>();
+            if (safetyDetector != null)
+            {
+                safetyDetector.ClearDetection();
+            }
             AdvanceSessionState(session);
         }
         else
@@ -635,13 +665,33 @@ public class ValetGuidanceSystem : MonoBehaviour
         if (parkingTrafficProvider == null)
             return;
 
-        int totalCarsInSimulation = Mathf.Max(1, allParkingSpots != null ? allParkingSpots.Count : 1);
-        int activeCarsCount = activeSessions != null ? activeSessions.Count : 0;
+        int totalCars = 0;
+        int activeCars = 0;
 
-        parkingTrafficProvider.SetExternalTrafficData(
-            totalCarsInSimulation,
-            activeCarsCount
-        );
+        if (activeSessions != null)
+        {
+            foreach (ValetSession session in activeSessions)
+            {
+                if (session == null || session.car == null)
+                    continue;
+
+                if (!session.car.gameObject.activeInHierarchy)
+                    continue;
+
+                totalCars++;
+
+                bool isMoving =
+                    session.state == ValetState.ApproachingDropOff ||
+                    session.state == ValetState.MovingToPark ||
+                    session.state == ValetState.MovingToPickUp ||
+                    session.state == ValetState.Exiting;
+
+                if (isMoving)
+                    activeCars++;
+            }
+        }
+
+        parkingTrafficProvider.SetExternalTrafficData(totalCars, activeCars);
     }
 
     private Transform GetFreeParkingSpot()

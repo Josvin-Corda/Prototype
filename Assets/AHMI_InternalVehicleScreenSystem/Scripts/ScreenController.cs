@@ -7,8 +7,12 @@ namespace AHMI.InternalVehicleScreen
     {
         Default,
         Welcome,
-        AcceptEntry,
-        RouteInfo
+        SelectDestination,
+        AutonomousDrive,
+        Deployment,
+        PickUp,
+        Goodbye,
+        ResumeControl
     }
 
     public class InternalVehicleScreenController : MonoBehaviour
@@ -22,8 +26,12 @@ namespace AHMI.InternalVehicleScreen
         [Header("Screen Images")]
         [SerializeField] private Texture2D defaultImage;
         [SerializeField] private Texture2D welcomeImage;
-        [SerializeField] private Texture2D acceptEntryImage;
-        [SerializeField] private Texture2D routeInfoImage;
+        [SerializeField] private Texture2D selectDestinationImage;
+        [SerializeField] private Texture2D autonomousDriveImage;
+        [SerializeField] private Texture2D deploymentImage;
+        [SerializeField] private Texture2D pickUpImage;
+        [SerializeField] private Texture2D goodbyeImage;
+        [SerializeField] private Texture2D resumeControlImage;
 
         [Header("Startup")]
         [SerializeField] private bool showDefaultOnStart = true;
@@ -67,14 +75,45 @@ namespace AHMI.InternalVehicleScreen
             SetScreenState(InternalScreenState.Welcome);
         }
 
+        public void ShowSelectDestination()
+        {
+            SetScreenState(InternalScreenState.SelectDestination);
+        }
+
+        public void ShowAutonomousDrive()
+        {
+            SetScreenState(InternalScreenState.AutonomousDrive);
+        }
+
+        public void ShowDeployment()
+        {
+            SetScreenState(InternalScreenState.Deployment);
+        }
+
+        public void ShowPickUp()
+        {
+            SetScreenState(InternalScreenState.PickUp);
+        }
+
+        public void ShowGoodbye()
+        {
+            SetScreenState(InternalScreenState.Goodbye);
+        }
+
+        public void ShowResumeControl()
+        {
+            SetScreenState(InternalScreenState.ResumeControl);
+        }
+
+        // Backward compatibility methods for unmodified trigger scripts
         public void ShowAcceptEntry()
         {
-            SetScreenState(InternalScreenState.AcceptEntry);
+            ShowSelectDestination();
         }
 
         public void ShowRouteInfo()
         {
-            SetScreenState(InternalScreenState.RouteInfo);
+            ShowAutonomousDrive();
         }
 
         public void SetScreenState(InternalScreenState state)
@@ -107,10 +146,10 @@ namespace AHMI.InternalVehicleScreen
             SetScreenState(InternalScreenState.Welcome);
             yield return new WaitForSeconds(welcomeDuration);
 
-            SetScreenState(InternalScreenState.AcceptEntry);
+            SetScreenState(InternalScreenState.SelectDestination);
             yield return new WaitForSeconds(acceptEntryDuration);
 
-            SetScreenState(InternalScreenState.RouteInfo);
+            SetScreenState(InternalScreenState.AutonomousDrive);
 
             activeSequence = null;
         }
@@ -125,11 +164,23 @@ namespace AHMI.InternalVehicleScreen
                 case InternalScreenState.Welcome:
                     return welcomeImage;
 
-                case InternalScreenState.AcceptEntry:
-                    return acceptEntryImage;
+                case InternalScreenState.SelectDestination:
+                    return selectDestinationImage;
 
-                case InternalScreenState.RouteInfo:
-                    return routeInfoImage;
+                case InternalScreenState.AutonomousDrive:
+                    return autonomousDriveImage;
+
+                case InternalScreenState.Deployment:
+                    return deploymentImage;
+
+                case InternalScreenState.PickUp:
+                    return pickUpImage;
+
+                case InternalScreenState.Goodbye:
+                    return goodbyeImage;
+
+                case InternalScreenState.ResumeControl:
+                    return resumeControlImage;
 
                 default:
                     return defaultImage;
