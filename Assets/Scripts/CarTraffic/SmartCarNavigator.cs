@@ -35,6 +35,7 @@ public class SmartCarNavigator : MonoBehaviour
     private bool isBarrierStopped = false;
     private bool isSafetyWaiting = false;
     private bool isCrosswalkStopped = false;
+    private AHMI.Safety.BlinkingLightAdapter cachedLightAdapter;
 
     public bool IsBarrierStopped
     {
@@ -46,23 +47,39 @@ public class SmartCarNavigator : MonoBehaviour
     public bool IsCrosswalkStopped
     {
         get => isCrosswalkStopped;
-        set => isCrosswalkStopped = value;
+        set
+        {
+            if (isCrosswalkStopped != value)
+            {
+                isCrosswalkStopped = value;
+                RefreshPedestrianWarningLights();
+            }
+        }
     }
 
     public bool IsSafetyWaiting
     {
         get => isSafetyWaiting;
-        set => isSafetyWaiting = value;
+        set
+        {
+            if (isSafetyWaiting != value)
+            {
+                isSafetyWaiting = value;
+                RefreshPedestrianWarningLights();
+            }
+        }
     }
 
     public void RequestSafetyStop()
     {
         isSafetyWaiting = true;
+        RefreshPedestrianWarningLights();
     }
 
     public void RequestSafetyResume()
     {
         isSafetyWaiting = false;
+        RefreshPedestrianWarningLights();
         // Restore headlight look
         if (valetSystem != null)
         {
@@ -122,6 +139,8 @@ public class SmartCarNavigator : MonoBehaviour
 
     void Start()
     {
+        cachedLightAdapter = GetComponentInChildren<AHMI.Safety.BlinkingLightAdapter>(true);
+
         // Automatically find and subscribe to safety system if present
         AHMI.Safety.SafetyInteractionState safetyState = GetComponentInChildren<AHMI.Safety.SafetyInteractionState>();
         if (safetyState != null)
@@ -176,8 +195,8 @@ public class SmartCarNavigator : MonoBehaviour
             normalSpeedInitialized = true;
         }
 
-        // If safety waiting is active, pulsate headlights emission
-        if (isSafetyWaiting)
+        // If safety waiting or crosswalk stop is active, pulsate headlights emission
+        if (isSafetyWaiting || isCrosswalkStopped)
         {
             PulsateHeadlights();
         }
@@ -727,29 +746,20 @@ public class SmartCarNavigator : MonoBehaviour
         }
 
         // 2. Visual Blinking Lights Setup
-        AHMI.Safety.BlinkingLightAdapter lightAdapter = GetComponentInChildren<AHMI.Safety.BlinkingLightAdapter>(true);
-        if (lightAdapter == null)
+        cachedLightAdapter = GetComponentInChildren<AHMI.Safety.BlinkingLightAdapter>(true);
+        if (cachedLightAdapter == null)
         {
             Light[] childLights = GetComponentsInChildren<Light>(true);
             if (childLights.Length > 0)
             {
-                lightAdapter = gameObject.GetComponent<AHMI.Safety.BlinkingLightAdapter>();
-                if (lightAdapter == null)
+                cachedLightAdapter = gameObject.GetComponent<AHMI.Safety.BlinkingLightAdapter>();
+                if (cachedLightAdapter == null)
                 {
-                    lightAdapter = gameObject.AddComponent<AHMI.Safety.BlinkingLightAdapter>();
+                    cachedLightAdapter = gameObject.AddComponent<AHMI.Safety.BlinkingLightAdapter>();
                 }
                 
-                lightAdapter.Initialize(childLights);
+                cachedLightAdapter.Initialize(childLights);
             }
-        }
-
-        if (lightAdapter != null)
-        {
-            // Wire event handlers (remove first to prevent duplicate subscriptions)
-            safetyState.OnSafetyWaitStarted.RemoveListener(lightAdapter.StartBlinking);
-            safetyState.OnSafetyWaitStarted.AddListener(lightAdapter.StartBlinking);
-            safetyState.OnSafetyWaitEnded.RemoveListener(lightAdapter.StopBlinking);
-            safetyState.OnSafetyWaitEnded.AddListener(lightAdapter.StopBlinking);
         }
     }
 
@@ -802,5 +812,26 @@ public class SmartCarNavigator : MonoBehaviour
             }
         }
         return false;
+    }
+
+    private void RefreshPedestrianWarningLights()
+    {
+        if (cachedLightAdapter == null)
+        {
+            cachedLightAdapter = GetComponentInChildren<AHMI.Safety.BlinkingLightAdapter>(true);
+        }
+
+        if (cachedLightAdapter != null)
+        {
+            bool shouldBlink = isSafetyWaiting || isCrosswalkStopped;
+            if (shouldBlink)
+            {
+                cachedLightAdapter.StartBlinking();
+            }
+            else
+            {
+                cachedLightAdapter.StopBlinking();
+            }
+        }
     }
 }

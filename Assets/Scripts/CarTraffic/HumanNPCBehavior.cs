@@ -264,25 +264,35 @@ public class HumanNPCBehavior : MonoBehaviour
                     SetNPCVisibility(true); // Reappear when wait time is over
                     if (isDriver)
                     {
-                        // Find all active GameObjects named "Totem"
-                        List<GameObject> totems = new List<GameObject>();
-                        foreach (GameObject obj in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+                        // Robust discovery using TotemCarRequest component (typed, name-independent)
+                        TotemCarRequest[] totemComponents = Object.FindObjectsByType<TotemCarRequest>(FindObjectsSortMode.None);
+                        List<TotemCarRequest> validTotems = new List<TotemCarRequest>();
+                        if (totemComponents != null)
                         {
-                            if (obj.activeInHierarchy && obj.name == "Totem")
+                            foreach (var t in totemComponents)
                             {
-                                totems.Add(obj);
+                                if (t != null && t.gameObject.activeInHierarchy && t.enabled)
+                                {
+                                    // Avoid duplicate references belonging to the same physical Totem
+                                    if (!validTotems.Exists(v => v.gameObject == t.gameObject))
+                                    {
+                                        validTotems.Add(t);
+                                    }
+                                }
                             }
                         }
 
                         GameObject nearestTotem = null;
-                        float minDistance = float.MaxValue;
-                        foreach (GameObject totem in totems)
+                        float minSqrDistance = float.MaxValue;
+                        Vector3 npcPos = transform.position;
+
+                        foreach (var totemComp in validTotems)
                         {
-                            float dist = Vector3.Distance(transform.position, totem.transform.position);
-                            if (dist < minDistance)
+                            float sqrDist = (npcPos - totemComp.transform.position).sqrMagnitude;
+                            if (sqrDist < minSqrDistance)
                             {
-                                minDistance = dist;
-                                nearestTotem = totem;
+                                minSqrDistance = sqrDist;
+                                nearestTotem = totemComp.gameObject;
                             }
                         }
 

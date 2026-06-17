@@ -2589,7 +2589,7 @@ MonoBehaviour:
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -4293,14 +4293,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AHMI.InternalVehicleScreen.InternalVehicleScreenController
   overlayRenderer: {fileID: 4418333996494611322}
   texturePropertyName: _BaseMap
-  defaultImage: {fileID: 2800000, guid: f51773733dd311a4bb52042a65b238d5, type: 3}
-  welcomeImage: {fileID: 2800000, guid: a4eac6b7899ab1540bd3e7bd1c5e0792, type: 3}
-  selectDestinationImage: {fileID: 2800000, guid: ee112018e8d41894e9bf57ae12b2303a, type: 3}
-  autonomousDriveImage: {fileID: 2800000, guid: d1a04658414dcf544a6ae09df82426a9, type: 3}
-  deploymentImage: {fileID: 2800000, guid: 5e68fd212f2902b42baffb609d42270f, type: 3}
-  pickUpImage: {fileID: 2800000, guid: a1f98b170ee0d0d4a82db3e37d907b61, type: 3}
-  goodbyeImage: {fileID: 2800000, guid: ad288fd351c1554448f4adb578a6292b, type: 3}
-  resumeControlImage: {fileID: 2800000, guid: e7c7812ea3cb79e4584d6ea66ec4c9f6, type: 3}
+  defaultImage: {fileID: 2800000, guid: dacd7415cf1a6b54eaa2c338833511a1, type: 3}
+  welcomeImage: {fileID: 2800000, guid: 3ebcab3b9d76053469ff5b25504c1be8, type: 3}
+  selectDestinationImage: {fileID: 2800000, guid: 0b4b1a277b13bc844b6c952fd3050d14, type: 3}
+  autonomousDriveImage: {fileID: 2800000, guid: 49410c6eeb056914c876f6690110fbb8, type: 3}
+  deploymentImage: {fileID: 2800000, guid: a084b24889fc8ac4c80e6d37c2645355, type: 3}
+  pickUpImage: {fileID: 2800000, guid: 2bfda42a1e9f09740bd9b13d9b440aa1, type: 3}
+  goodbyeImage: {fileID: 2800000, guid: a93ab04c948095b4a8aa877ba1ef0ca0, type: 3}
+  resumeControlImage: {fileID: 2800000, guid: 1bf7f72eba6a2ff4492a218c3ce59f2b, type: 3}
   showDefaultOnStart: 1
   welcomeDuration: 1
   acceptEntryDuration: 1
@@ -4537,8 +4537,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Radius: 1.7081451
+  m_Center: {x: 0, y: 0, z: 0.29185486}
 --- !u!114 &3622187273537354601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8417,7 +8417,7 @@ Transform:
   m_GameObject: {fileID: 5375703791651292118}
   serializedVersion: 2
   m_LocalRotation: {x: 0.2560715, y: 0.65911114, z: 0.659111, w: 0.25607154}
-  m_LocalPosition: {x: 0.02185, y: 0.00247, z: -0.00425}
+  m_LocalPosition: {x: 0.0275, y: 0.0022, z: -0.0043}
   m_LocalScale: {x: 0.012499997, y: 0.012499999, z: 0.0125}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9841,8 +9841,8 @@ Transform:
   m_GameObject: {fileID: 6678206554869741502}
   serializedVersion: 2
   m_LocalRotation: {x: 0.57334065, y: -0.000000029802326, z: -0.000000029802326, w: 0.81931716}
-  m_LocalPosition: {x: 0.01993, y: 0.00866, z: -0.00383}
-  m_LocalScale: {x: 1.2, y: 1.2, z: 1.2}
+  m_LocalPosition: {x: 0.017388, y: 0.008895, z: -0.001833}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6636327628679290913}
@@ -11075,7 +11075,7 @@ MonoBehaviour:
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 

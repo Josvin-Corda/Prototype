@@ -1,4 +1,5 @@
 using UnityEngine;
+using AHMI.ETA;
 
 /// <summary>
 /// Attached to the Totem's CardReader object.
@@ -6,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public class TotemRecallHandler : MonoBehaviour
 {
+    [SerializeField] private TotemScreenSequence screenSequence;
+
     private CardReader cardReader;
     private ValetGuidanceSystem valetSystem;
 
@@ -45,6 +48,11 @@ public class TotemRecallHandler : MonoBehaviour
             {
                 Debug.Log($"[TotemRecallHandler] Card tap matched active session for plate {session.plateNumber} ({session.car.name}). Initiating recall!");
                 valetSystem.RecallCar(session.car);
+
+                if (screenSequence != null)
+                {
+                    screenSequence.StartRecallSequence();
+                }
                 
                 // Trigger ETA calculation on the associated TotemCarRequest if present
                 var request = GetComponentInParent<TotemCarRequest>();
