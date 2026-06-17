@@ -35,6 +35,8 @@ public class PlayerCarProgression : MonoBehaviour
     [SerializeField] private ValetState playerCarState = ValetState.Manual;
     [SerializeField] private bool isPlayerInsideCar = false;
     
+    [SerializeField] private Collider playerDetectionProxy;
+
     private Coroutine autoParkCoroutine;
     private Coroutine autoExitCoroutine;
 
@@ -62,6 +64,8 @@ public class PlayerCarProgression : MonoBehaviour
         {
             Debug.LogWarning("[PlayerCarProgression] XR Origin (XR Rig) not found by name in scene. You may need to assign it manually.");
         }
+
+        RefreshPlayerDetectionProxy();
     }
 
     private void Update()
@@ -425,6 +429,9 @@ public class PlayerCarProgression : MonoBehaviour
         if (isPlayerInsideCar != inside)
         {
             isPlayerInsideCar = inside;
+
+            RefreshPlayerDetectionProxy();
+
             if (triggerEvents)
             {
                 if (isPlayerInsideCar)
@@ -436,6 +443,14 @@ public class PlayerCarProgression : MonoBehaviour
                     OnPlayerExited();
                 }
             }
+        }
+    }
+
+    private void RefreshPlayerDetectionProxy()
+    {
+        if (playerDetectionProxy != null)
+        {
+            playerDetectionProxy.enabled = !isPlayerInsideCar;
         }
     }
 

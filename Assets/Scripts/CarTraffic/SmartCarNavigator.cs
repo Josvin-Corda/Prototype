@@ -36,6 +36,8 @@ public class SmartCarNavigator : MonoBehaviour
     private bool isSafetyWaiting = false;
     private bool isCrosswalkStopped = false;
     private AHMI.Safety.BlinkingLightAdapter cachedLightAdapter;
+    private AHMI.Safety.SafetyAudioAdapter safetyAudioAdapter;
+    private bool pedestrianWarningAudioPlayed;
 
     public bool IsBarrierStopped
     {
@@ -53,6 +55,7 @@ public class SmartCarNavigator : MonoBehaviour
             {
                 isCrosswalkStopped = value;
                 RefreshPedestrianWarningLights();
+                RefreshPedestrianWarningAudio();
             }
         }
     }
@@ -66,6 +69,7 @@ public class SmartCarNavigator : MonoBehaviour
             {
                 isSafetyWaiting = value;
                 RefreshPedestrianWarningLights();
+                RefreshPedestrianWarningAudio();
             }
         }
     }
@@ -74,12 +78,14 @@ public class SmartCarNavigator : MonoBehaviour
     {
         isSafetyWaiting = true;
         RefreshPedestrianWarningLights();
+        RefreshPedestrianWarningAudio();
     }
 
     public void RequestSafetyResume()
     {
         isSafetyWaiting = false;
         RefreshPedestrianWarningLights();
+        RefreshPedestrianWarningAudio();
         // Restore headlight look
         if (valetSystem != null)
         {
@@ -152,6 +158,8 @@ public class SmartCarNavigator : MonoBehaviour
             // Automatically set up and wire audio and visual safety adapters
             SetupSafetyAudioAndLights(safetyState);
         }
+
+        safetyAudioAdapter = GetComponentInChildren<AHMI.Safety.SafetyAudioAdapter>(true);
 
         if (agent != null)
         {
@@ -739,10 +747,10 @@ public class SmartCarNavigator : MonoBehaviour
         if (audioAdapter != null)
         {
             // Wire event handlers (remove first to prevent duplicate subscriptions)
-            safetyState.OnSafetyWaitStarted.RemoveListener(audioAdapter.PlayAlert);
-            safetyState.OnSafetyWaitStarted.AddListener(audioAdapter.PlayAlert);
-            safetyState.OnSafetyWaitEnded.RemoveListener(audioAdapter.StopAlert);
-            safetyState.OnSafetyWaitEnded.AddListener(audioAdapter.StopAlert);
+            safetyState.OnSafetyWaitStarted.RemoveListener(RefreshPedestrianWarningAudio);
+            safetyState.OnSafetyWaitStarted.AddListener(RefreshPedestrianWarningAudio);
+            safetyState.OnSafetyWaitEnded.RemoveListener(RefreshPedestrianWarningAudio);
+            safetyState.OnSafetyWaitEnded.AddListener(RefreshPedestrianWarningAudio);
         }
 
         // 2. Visual Blinking Lights Setup
@@ -812,6 +820,24 @@ public class SmartCarNavigator : MonoBehaviour
             }
         }
         return false;
+    }
+
+    private void RefreshPedestrianWarningAudio()
+    {
+        bool shouldPlay = isSafetyWaiting || isCrosswalkStopped;
+
+        if (shouldPlay)
+        {
+            if (!pedestrianWarningAudioPlayed && safetyAudioAdapter != null)
+            {
+                safetyAudioAdapter.PlayAlert();
+                pedestrianWarningAudioPlayed = true;
+            }
+        }
+        else
+        {
+            pedestrianWarningAudioPlayed = false;
+        }
     }
 
     private void RefreshPedestrianWarningLights()
