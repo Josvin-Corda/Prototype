@@ -235,7 +235,7 @@ public class ValetGuidanceSystem : MonoBehaviour
             finalPlate = !string.IsNullOrEmpty(car.plateNumber) ? car.plateNumber : GeneratePlate();
             finalOwner = dummyNames[Random.Range(0, dummyNames.Length)];
             finalContact = GenerateContact();
-            finalNumPassengers = Random.Range(1, 5); // 1 to 4 passengers
+            finalNumPassengers = Random.Range(1, 3); // 1 to 2 passengers
             finalReturnWaitTime = Random.Range(10f, 30f); // 10s to 30s wait time
             finalCard = "NPC-CARD-" + Random.Range(1000, 9999);
 

@@ -5651,7 +5651,7 @@ Transform:
   m_GameObject: {fileID: 447966095}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 495.3, y: -10.9, z: -159.3}
+  m_LocalPosition: {x: 500.8, y: 1.2, z: -165.3}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5689,7 +5689,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 2.5}
+  m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &447966099
 MonoBehaviour:
@@ -12983,7 +12983,7 @@ Transform:
   m_GameObject: {fileID: 989110897}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.00329, y: -0.01042, z: 0.0102}
+  m_LocalPosition: {x: 0.00185, y: -0.0093, z: 0.0102}
   m_LocalScale: {x: 0.03, y: 0.03, z: 0.03}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21789,8 +21789,8 @@ MonoBehaviour:
   - {fileID: 1780351737568190, guid: ed7795f4883cb97468521311f1be4e22, type: 3}
   spawnPoint: {fileID: 983431996}
   spawnRotation: {x: 0, y: 90, z: 0}
-  maxNPCCars: 8
-  spawnInterval: 20
+  maxNPCCars: 10
+  spawnInterval: 30
   initialDelay: 3
   agentSpeed: 4
   agentAngularSpeed: 100
@@ -26221,7 +26221,7 @@ Transform:
   m_GameObject: {fileID: 2040707895}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 493.9, y: -10.2, z: -161.3}
+  m_LocalPosition: {x: 500.8, y: 1.2, z: -165.3}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -26259,7 +26259,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 2.5}
+  m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2040707899
 MonoBehaviour:

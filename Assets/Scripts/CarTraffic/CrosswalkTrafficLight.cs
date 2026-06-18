@@ -386,6 +386,31 @@ public class CrosswalkTrafficLight : MonoBehaviour
                 return true;
             }
         }
+
+        // Also check if player on foot is inside the crosswalk
+        PlayerCarProgression playerProg = Object.FindAnyObjectByType<PlayerCarProgression>();
+        bool isInsideCar = playerProg != null && playerProg.IsPlayerInsideCar;
+        if (!isInsideCar)
+        {
+            Vector3 playerPos = Vector3.zero;
+            if (Camera.main != null)
+            {
+                playerPos = Camera.main.transform.position;
+            }
+            else if (playerProg != null && playerProg.xrOrigin != null)
+            {
+                playerPos = playerProg.xrOrigin.transform.position;
+            }
+
+            if (playerPos != Vector3.zero)
+            {
+                if (playerPos.x >= minX && playerPos.x <= maxX && playerPos.z >= minZ && playerPos.z <= maxZ)
+                {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -406,6 +431,31 @@ public class CrosswalkTrafficLight : MonoBehaviour
                 return true;
             }
         }
+
+        // Also check if player on foot is approaching the crosswalk
+        PlayerCarProgression playerProg = Object.FindAnyObjectByType<PlayerCarProgression>();
+        bool isInsideCar = playerProg != null && playerProg.IsPlayerInsideCar;
+        if (!isInsideCar)
+        {
+            Vector3 playerPos = Vector3.zero;
+            if (Camera.main != null)
+            {
+                playerPos = Camera.main.transform.position;
+            }
+            else if (playerProg != null && playerProg.xrOrigin != null)
+            {
+                playerPos = playerProg.xrOrigin.transform.position;
+            }
+
+            if (playerPos != Vector3.zero)
+            {
+                if (playerPos.x >= minX && playerPos.x <= maxX && playerPos.z >= minZ && playerPos.z <= maxZ)
+                {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

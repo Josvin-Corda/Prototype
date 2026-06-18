@@ -20,7 +20,7 @@
       "plateNumber": "CC-456-DD",
       "ownerName": "Jane Smith",
       "contact": "+39 333 9876543",
-      "numPassengers": 4,
+      "numPassengers": 2,
       "returnWaitTime": 25.0,
       "paymentCardNumber": "NPC-CARD-0002"
     },
@@ -36,7 +36,7 @@
       "plateNumber": "GG-101-HH",
       "ownerName": "Luigi Bianchi",
       "contact": "+39 333 1112223",
-      "numPassengers": 3,
+      "numPassengers": 2,
       "returnWaitTime": 18.0,
       "paymentCardNumber": "NPC-CARD-0004"
     },
@@ -52,7 +52,7 @@
       "plateNumber": "KK-303-LL",
       "ownerName": "Bob Miller",
       "contact": "+39 333 3334445",
-      "numPassengers": 4,
+      "numPassengers": 2,
       "returnWaitTime": 30.0,
       "paymentCardNumber": "NPC-CARD-0006"
     },
@@ -60,7 +60,7 @@
       "plateNumber": "MM-404-NN",
       "ownerName": "Emma Watson",
       "contact": "+39 333 4445556",
-      "numPassengers": 3,
+      "numPassengers": 1,
       "returnWaitTime": 22.0,
       "paymentCardNumber": "NPC-CARD-0007"
     },
@@ -84,7 +84,7 @@
       "plateNumber": "SS-707-TT",
       "ownerName": "David Beckham",
       "contact": "+39 333 7778889",
-      "numPassengers": 3,
+      "numPassengers": 1,
       "returnWaitTime": 28.0,
       "paymentCardNumber": "NPC-CARD-0010"
     },
@@ -100,7 +100,7 @@
       "plateNumber": "WW-909-XX",
       "ownerName": "Peter Parker",
       "contact": "+39 333 9990001",
-      "numPassengers": 4,
+      "numPassengers": 2,
       "returnWaitTime": 24.0,
       "paymentCardNumber": "NPC-CARD-0012"
     },
@@ -124,7 +124,7 @@
       "plateNumber": "EF-333-GH",
       "ownerName": "Clark Kent",
       "contact": "+39 333 5550101",
-      "numPassengers": 3,
+      "numPassengers": 1,
       "returnWaitTime": 19.0,
       "paymentCardNumber": "NPC-CARD-0015"
     },
@@ -140,7 +140,7 @@
       "plateNumber": "MN-555-OP",
       "ownerName": "Barry Allen",
       "contact": "+39 333 7770303",
-      "numPassengers": 4,
+      "numPassengers": 2,
       "returnWaitTime": 29.0,
       "paymentCardNumber": "NPC-CARD-0017"
     },
@@ -156,7 +156,7 @@
       "plateNumber": "UV-777-WX",
       "ownerName": "Hal Jordan",
       "contact": "+39 333 9990505",
-      "numPassengers": 3,
+      "numPassengers": 1,
       "returnWaitTime": 17.0,
       "paymentCardNumber": "NPC-CARD-0019"
     },
