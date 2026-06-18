@@ -91,7 +91,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: 5071019b83259c84da990113df529134, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 0.79
   m_Pitch: 1
@@ -100,9 +100,9 @@ AudioSource:
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
+  DopplerLevel: 0
+  MinDistance: 2
+  MaxDistance: 15
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -292,9 +292,9 @@ MonoBehaviour:
   lights:
   - {fileID: 4514805639172189993}
   - {fileID: 6772608139570758730}
-  blinkSpeed: 3
+  blinkSpeed: 1
   minIntensity: 0.1
-  maxIntensity: 3
+  maxIntensity: 5
 --- !u!1 &4381868660000593475
 GameObject:
   m_ObjectHideFlags: 0

@@ -161,6 +161,8 @@ public class SmartCarNavigator : MonoBehaviour
 
         safetyAudioAdapter = GetComponentInChildren<AHMI.Safety.SafetyAudioAdapter>(true);
 
+        RefreshPedestrianWarningLights();
+
         if (agent != null)
         {
             if (agent.isOnNavMesh)
