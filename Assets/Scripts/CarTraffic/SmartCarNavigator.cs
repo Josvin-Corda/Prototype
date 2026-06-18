@@ -602,12 +602,22 @@ public class SmartCarNavigator : MonoBehaviour
         }
     }
 
+    private Transform GetHeadlightGlass()
+    {
+        Transform lightGlass = FindChildRecursive(transform, "lightGlass");
+        if (lightGlass == null)
+        {
+            lightGlass = FindChildRecursive(transform, "testcarlight");
+        }
+        return lightGlass;
+    }
+
     /// <summary>
     /// Finds the lightGlass child object recursively and turns its color to turquoise.
     /// </summary>
     public void SetAutoparkLightColor(Color color)
     {
-        Transform lightGlass = FindChildRecursive(transform, "lightGlass");
+        Transform lightGlass = GetHeadlightGlass();
         if (lightGlass != null)
         {
             MeshRenderer renderer = lightGlass.GetComponent<MeshRenderer>();
@@ -626,7 +636,7 @@ public class SmartCarNavigator : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[SmartCarNavigator] Could not find child 'lightGlass' on {gameObject.name}");
+            Debug.LogWarning($"[SmartCarNavigator] Could not find headlight glass child on {gameObject.name}");
         }
     }
 
@@ -635,7 +645,7 @@ public class SmartCarNavigator : MonoBehaviour
     /// </summary>
     public void ResetAutoparkLight()
     {
-        Transform lightGlass = FindChildRecursive(transform, "lightGlass");
+        Transform lightGlass = GetHeadlightGlass();
         if (lightGlass != null)
         {
             MeshRenderer renderer = lightGlass.GetComponent<MeshRenderer>();
@@ -796,7 +806,7 @@ public class SmartCarNavigator : MonoBehaviour
         float pulse = Mathf.PingPong(Time.time * 4f, 1f);
         float intensity = Mathf.Lerp(0.05f, 0.5f, pulse);
 
-        Transform lightGlass = FindChildRecursive(transform, "lightGlass");
+        Transform lightGlass = GetHeadlightGlass();
         if (lightGlass != null)
         {
             MeshRenderer renderer = lightGlass.GetComponent<MeshRenderer>();
