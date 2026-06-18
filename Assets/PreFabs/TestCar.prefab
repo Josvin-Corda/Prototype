@@ -4505,8 +4505,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.7081451
-  m_Center: {x: 0, y: 0, z: 0.29185486}
+  m_Radius: 1
+  m_Center: {x: 0, y: 0, z: 0.8}
 --- !u!114 &3622187273537354601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11865,7 +11865,7 @@ AudioSource:
   m_GameObject: {fileID: 8006236394031200090}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -6754129386468974639, guid: 076fbef2f9d064a4f89b8fb2d880390d, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 5071019b83259c84da990113df529134, type: 3}
   m_PlayOnAwake: 0
